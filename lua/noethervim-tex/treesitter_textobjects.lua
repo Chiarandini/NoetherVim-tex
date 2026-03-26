@@ -1,9 +1,6 @@
---- LaTeX-specific treesitter-textobjects move keybindings.
---- Called from noethervim-tex.setup().
----
---- Uses the nvim-treesitter-textobjects move module directly (via buffer-local
---- keymaps on FileType) instead of configs.setup(), which has timing issues
---- when the plugin loads after treesitter has already attached to a buffer.
+--- LaTeX treesitter textobject navigation.
+--- Uses vim.treesitter directly — no dependency on nvim-treesitter-textobjects
+--- or on nvim-treesitter highlight being active for tex buffers.
 ---
 --- Keybindings (tex/latex buffers only):
 ---   ]g / [g  — next/prev theorem env (defn, thm, prop, lem, cor)
@@ -15,43 +12,87 @@
 
 local M = {}
 
-local function attach_keymaps(bufnr)
-  local ok, move = pcall(require, "nvim-treesitter.textobjects.move")
-  if not ok then return end
+--- Jump to the nearest node matching `capture_name` in the latex textobjects
+--- query. `forward = true` goes to the next occurrence, false to the previous.
+local function navigate(capture_name, forward)
+  local bufnr = vim.api.nvim_get_current_buf()
 
-  local function map(lhs, fn, desc)
-    vim.keymap.set("n", lhs, fn, { buffer = bufnr, silent = true, desc = desc })
+  local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "latex")
+  if not ok or not parser then
+    vim.notify("noethervim-tex: no latex treesitter parser available", vim.log.levels.WARN)
+    return
   end
 
-  map("]g", function() move.goto_next_start("@box_env",     "textobjects") end, "next theorem env")
-  map("[g", function() move.goto_previous_start("@box_env", "textobjects") end, "prev theorem env")
+  local trees = parser:parse()
+  if not trees or not trees[1] then return end
 
-  map("]p", function() move.goto_next_start("@proof_env",     "textobjects") end, "next \\begin{Proof}")
-  map("[p", function() move.goto_previous_start("@proof_env", "textobjects") end, "prev \\begin{Proof}")
+  local query = vim.treesitter.query.get("latex", "textobjects")
+  if not query then
+    vim.notify("noethervim-tex: latex textobjects query not found", vim.log.levels.WARN)
+    return
+  end
 
-  map("]P", function() move.goto_next_start("@proof_end",     "textobjects") end, "next \\end{Proof}")
-  map("[P", function() move.goto_previous_start("@proof_end", "textobjects") end, "prev \\end{Proof}")
+  local cursor  = vim.api.nvim_win_get_cursor(0)
+  local cur_row = cursor[1] - 1  -- convert to 0-indexed
+  local cur_col = cursor[2]
 
-  map("]x", function() move.goto_next_start("@example_env",     "textobjects") end, "next \\begin{example}")
-  map("[x", function() move.goto_previous_start("@example_env", "textobjects") end, "prev \\begin{example}")
+  local best_row, best_col
 
-  map("]X", function() move.goto_next_start("@example_end",     "textobjects") end, "next \\end{example}")
-  map("[X", function() move.goto_previous_start("@example_end", "textobjects") end, "prev \\end{example}")
+  for id, node in query:iter_captures(trees[1]:root(), bufnr) do
+    if query.captures[id] == capture_name then
+      local sr, sc = node:start()
+      if forward then
+        -- want the closest node strictly after cursor
+        if sr > cur_row or (sr == cur_row and sc > cur_col) then
+          if not best_row or sr < best_row or (sr == best_row and sc < best_col) then
+            best_row, best_col = sr, sc
+          end
+        end
+      else
+        -- want the closest node strictly before cursor
+        if sr < cur_row or (sr == cur_row and sc < cur_col) then
+          if not best_row or sr > best_row or (sr == best_row and sc > best_col) then
+            best_row, best_col = sr, sc
+          end
+        end
+      end
+    end
+  end
 
-  map("]c", function() move.goto_next_start("@chapter",     "textobjects") end, "next chapter")
-  map("[c", function() move.goto_previous_start("@chapter", "textobjects") end, "prev chapter")
+  if best_row then
+    vim.cmd("normal! m'")  -- add current position to jumplist
+    vim.api.nvim_win_set_cursor(0, { best_row + 1, best_col })
+  end
+end
+
+local function attach_keymaps(bufnr)
+  local function map(lhs, capture, forward, desc)
+    vim.keymap.set("n", lhs, function() navigate(capture, forward) end,
+      { buffer = bufnr, silent = true, desc = desc })
+  end
+
+  map("]g", "box_env",     true,  "next theorem env")
+  map("[g", "box_env",     false, "prev theorem env")
+  map("]p", "proof_env",   true,  "next \\begin{Proof}")
+  map("[p", "proof_env",   false, "prev \\begin{Proof}")
+  map("]P", "proof_end",   true,  "next \\end{Proof}")
+  map("[P", "proof_end",   false, "prev \\end{Proof}")
+  map("]x", "example_env", true,  "next \\begin{example}")
+  map("[x", "example_env", false, "prev \\begin{example}")
+  map("]X", "example_end", true,  "next \\end{example}")
+  map("[X", "example_end", false, "prev \\end{example}")
+  map("]c", "chapter",     true,  "next chapter")
+  map("[c", "chapter",     false, "prev chapter")
 end
 
 function M.setup()
   vim.api.nvim_create_autocmd("FileType", {
     group = vim.api.nvim_create_augroup("noethervim_tex_textobjects", { clear = true }),
     pattern = { "tex", "latex" },
-    callback = function(ev)
-      attach_keymaps(ev.buf)
-    end,
+    callback = function(ev) attach_keymaps(ev.buf) end,
   })
 
-  -- Apply to any tex buffers already open (e.g. if setup() is called late).
+  -- Apply to any tex buffers already open when setup() is called.
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     local ft = vim.bo[bufnr].filetype
     if ft == "tex" or ft == "latex" then
