@@ -1,8 +1,18 @@
 -- Native blink.cmp source for inserting LaTeX preamble snippets.
 -- Triggered when typing "@" at the very start of a line while outside \begin{document}.
--- Lists .tex files from ~/.config/nvim/preamble/ and inserts the filename (without .tex).
+-- Lists .tex files from the configured preamble folder and inserts the filename (without .tex).
+--
+-- The preamble folder is configurable via:
+--   require("noethervim-tex").setup({ preamble_folder = "~/my/preambles/" })
+-- Defaults to stdpath("config")/preamble/.
 
-local preamble_folder = os.getenv("HOME") .. "/.config/nvim/preamble/"
+local function get_preamble_folder()
+	local ok, ntex = pcall(require, "noethervim-tex")
+	if ok and ntex.config and ntex.config.preamble_folder then
+		return ntex.config.preamble_folder
+	end
+	return vim.fn.stdpath("config") .. "/preamble/"
+end
 
 local function get_preamble_names(directory)
 	local names = {}
@@ -26,7 +36,7 @@ local Source = {}
 
 function Source.new(_, _config)
 	local self = setmetatable({}, { __index = Source })
-	self.words = get_preamble_names(preamble_folder)
+	self.words = get_preamble_names(get_preamble_folder())
 	return self
 end
 
