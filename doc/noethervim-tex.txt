@@ -1,0 +1,451 @@
+*noethervim-tex.txt*    LaTeX companion plugin for mathematical writing
+
+Author:   Chiarandini
+License:  MIT
+
+==============================================================================
+CONTENTS                                            *noethervim-tex-contents*
+
+    1. Introduction ........................ |noethervim-tex|
+    2. Requirements ........................ |noethervim-tex-requirements|
+    3. Installation ........................ |noethervim-tex-install|
+    4. Configuration ....................... |noethervim-tex-config|
+    5. Textobject navigation ............... |noethervim-tex-textobjects|
+    6. Preamble completion ................. |noethervim-tex-preamble-source|
+    7. Treesitter highlights ............... |noethervim-tex-highlights|
+    8. Spell dictionary .................... |noethervim-tex-spell|
+    9. Snippets ............................ |noethervim-tex-snippets|
+       9.1 Environments .................... |noethervim-tex-environments|
+       9.2 Math ............................ |noethervim-tex-math|
+       9.3 Text formatting ................. |noethervim-tex-fonts|
+       9.4 Document structure .............. |noethervim-tex-commands|
+       9.5 Text abbreviations .............. |noethervim-tex-abbreviations|
+       9.6 Preamble templates .............. |noethervim-tex-preamble|
+   10. Custom snippets ..................... |noethervim-tex-custom-snippets|
+       10.1 Helper API ..................... |noethervim-tex-helpers|
+   11. Structure ........................... |noethervim-tex-structure|
+
+==============================================================================
+1. INTRODUCTION                                            *noethervim-tex*
+
+noethervim-tex is a LaTeX companion plugin for Neovim, built for
+mathematical writing. It provides:
+
+- Context-aware LuaSnip snippet collection (math, environments, fonts,
+  preamble templates, text abbreviations, document structure)
+- Treesitter textobject navigation for theorem-proof workflows
+- blink.cmp preamble completion source
+- Custom treesitter highlight queries
+- Spell dictionary of 1000+ mathematical and academic terms
+
+The plugin is standalone but integrates seamlessly with NoetherVim as
+part of its `latex` bundle.
+
+==============================================================================
+2. REQUIREMENTS                                *noethervim-tex-requirements*
+
+Required: ~
+- Neovim >= 0.10
+- LuaSnip — snippet engine
+- VimTeX — environment and math zone detection
+- Treesitter `latex` parser — for textobjects and highlights
+
+Optional: ~
+- blink.cmp — for the preamble completion source
+
+==============================================================================
+3. INSTALLATION                                    *noethervim-tex-install*
+
+With lazy.nvim: >lua
+    { "Chiarandini/noethervim-tex",
+      ft = "tex",
+      opts = {},
+    }
+<
+If using NoetherVim, the plugin is already included in the `latex`
+bundle — no extra setup needed.
+
+==============================================================================
+4. CONFIGURATION                                    *noethervim-tex-config*
+
+Call `setup()` directly or use lazy.nvim `opts`: >lua
+    require("noethervim-tex").setup({
+      preamble_folder     = "~/my/preambles/",
+      extra_snippet_paths = { "~/shared-snippets/" },
+      textobjects         = true,
+    })
+<
+Options: ~
+
+    `preamble_folder`     (string, default: stdpath("config")/preamble/)
+        Directory containing `.tex` preamble files used by the preamble
+        completion source and preamble template snippets.
+
+    `extra_snippet_paths`  (table, default: {})
+        Additional directories for LuaSnip to lazy-load snippets from.
+
+    `textobjects`          (boolean, default: true)
+        Enable treesitter textobject navigation keymaps.
+
+Override via lazy.nvim in user plugins: >lua
+    { "Chiarandini/noethervim-tex", opts = {
+        preamble_folder = "~/my/preambles/",
+        textobjects = false,
+    } }
+<
+
+==============================================================================
+5. TEXTOBJECT NAVIGATION                       *noethervim-tex-textobjects*
+
+Jump between LaTeX structures in normal mode. All mappings are
+buffer-local to `tex`/`latex` filetypes. Jumps are added to the
+jumplist (`<C-o>` returns to previous position).
+
+    `]g` / `[g`     Next / prev theorem environment
+                   (defn, thm, prop, lem, cor)
+    `]p` / `[p`     Next / prev \begin{Proof}
+    `]P` / `[P`     Next / prev \end{Proof}
+    `]x` / `[x`     Next / prev \begin{example}
+    `]X` / `[X`     Next / prev \end{example}
+    `]c` / `[c`     Next / prev chapter
+
+Uses native `vim.treesitter` — no nvim-treesitter-textobjects plugin
+required. Disable with `textobjects = false` in setup.
+
+==============================================================================
+6. PREAMBLE COMPLETION                      *noethervim-tex-preamble-source*
+
+A blink.cmp completion source. Type `@` at the start of a line outside
+`\begin{document}` to trigger completion. Lists `.tex` files from the
+configured `preamble_folder` and inserts the filename without the `.tex`
+extension.
+
+Requires blink.cmp to be installed and the source to be registered.
+
+==============================================================================
+7. TREESITTER HIGHLIGHTS                       *noethervim-tex-highlights*
+
+Custom treesitter highlight queries (extend the default latex queries):
+
+- Theorem environment tags: highlights the reference tag in theorem
+  boxes (defn, prop, thm, lem, cor, titledBox, example).
+- Frac mismatch detection: highlights mismatched `}` in `\frac{}{}`
+  arguments as `@error`.
+
+==============================================================================
+8. SPELL DICTIONARY                                  *noethervim-tex-spell*
+
+Ships `spell/en.utf-8.add` containing 1000+ mathematical and academic
+terms so they are not flagged by Neovim's spell checker. Includes:
+
+- Mathematical concepts (homology, cohomology, isomorphism, ...)
+- Proper names (Noetherian, Riemann, Galois, ...)
+- Academic fields (algebraic geometry, topology, ...)
+
+The compiled `.spl` file is included. Neovim loads it automatically
+when spell checking is enabled in a tex buffer.
+
+==============================================================================
+9. SNIPPETS                                      *noethervim-tex-snippets*
+
+All snippets are LuaSnip snippets loaded from `LuaSnip/tex/`. They are
+organized into seven files by category.
+
+Snippets are either manual (expand with LuaSnip expand key) or auto
+(expand immediately when the trigger is typed in the correct context).
+
+Many support visual selection: select text, press the snippet trigger,
+and the selection wraps into the expanded snippet.
+
+------------------------------------------------------------------------------
+9.1 ENVIRONMENTS                              *noethervim-tex-environments*
+
+Structured LaTeX environments with auto-generated labels and reference
+tags. Titles are automatically converted to title case and abbreviated
+reference labels.
+
+Manual triggers (`:` prefix): ~
+
+    `:thm <title>`      Theorem with label, optional Proof block
+    `:defn <title>`     Definition with label, \index entry
+    `:prop <title>`     Proposition with label, Proof block
+    `:cor <title>`      Corollary with label, Proof block
+    `:lem <title>`      Lemma with label, Proof block
+    `:example <title>`  Example with label
+    `:exercise`         Exercise with Answer block
+    `:box <title>`      TitledBox with label
+    `:<envname>`        Generic \begin{envname}...\end{envname}
+
+Auto triggers: ~
+
+    `ENV`       Generic \begin{env}...\end{env}
+    `nn`        equation environment
+    `EAS`       align* environment
+    `EEN`       enumerate environment
+    `EEE`       equivEnumerate environment
+    `EIT`       itemize environment
+    `FIG`       figure with \includegraphics
+    `<N>SFIG`   N subfigures inside a figure (e.g. 3SFIG)
+
+------------------------------------------------------------------------------
+9.2 MATH                                            *noethervim-tex-math*
+
+Active only in math zones. All auto triggers unless noted.
+
+Fractions and operators: ~
+
+    `ff`        \frac{}{}                   (manual)
+    `FF`        \frac{}{}                   (requires non-alpha prefix)
+    `//`        \frac{}{}
+    `pf`        \frac{\partial}{\partial}
+    `pp`        \partial
+    `DF`        \diff
+    `dV`        \dv{}
+    `der`       derivative evaluated at point
+    `ee`        e^{}                        (requires non-alpha prefix)
+    `exp`       exp()                       (requires non-alpha prefix)
+    `intinf`    \int_{-\infty}^{\infty}
+
+Delimiters: ~
+
+    `((`        \left( ... \right)
+    `[[`        \left[ ... \right]
+    `{{`        \left\{ ... \right\} or \set{}{} (choice)
+    `||`        \left| ... \right|
+    `<<`        \langle ... \rangle
+
+Decorations: ~
+
+    `BB`        \overline{}
+    `HH`        \hat{}
+    `WH`        \widehat{}
+    `WT`        \widetilde{}
+    `TL`        \tilde{}
+    `UU`        \underline{}
+    `TT`        \text{}
+
+Arrows: ~
+
+    `->`        \to
+    `-x>`       \xrightarrow{}              (labeled arrow)
+    `-h>`       \hookrightarrow             (injection)
+    `-2>`       \twoheadrightarrow          (surjection)
+    `-e>`       \rightrightarrows            (equalizer)
+    `-d>`       \dashrightarrow             (rational map)
+    `!>`        \mapsto
+
+Symbols and operators: ~
+
+    `cc`        \subseteq
+    `SS`        \supseteq
+    `CC`        \circ
+    `00`        \emptyset
+    `BH`        \backslash
+    `WW`        \wedge
+    `BL`        \bullet
+    `==`        &=                          (in align environments)
+
+Sub/superscripts: ~
+
+    `__`        _{}
+    `^^`        ^{}
+
+Other: ~
+
+    `kk`        \[ ... \]                   (display math)
+    `mm`        $ ... $                     (inline math, in text)
+    `qtq`       \qquad \text{} \qquad
+    `QLQ`       \qquad\LRw\qquad
+
+Matrices (regex triggers): ~
+
+    `mat:MxN`   M-by-N matrix (e.g. bmat:3x2)
+    `mat:N`     N-by-N square matrix (e.g. pmat:4)
+
+    Prefix with b, B, p, v, or V for matrix variant.
+    Append `a` for augmented matrices.
+
+------------------------------------------------------------------------------
+9.3 TEXT FORMATTING                                 *noethervim-tex-fonts*
+
+Active in text zones. All manual triggers unless noted.
+
+    `i`         \emph{}
+    `b`         \textbf{}
+    `BB`        \textbf{}                   (in math zone)
+    `bi`        \textbf{\emph{}}
+    `ib`        \emph{\textbf{}}
+    `fn`        \footnote{}
+    ` `` `      ``...''                     (quotation, auto)
+
+------------------------------------------------------------------------------
+9.4 DOCUMENT STRUCTURE                           *noethervim-tex-commands*
+
+Auto triggers for sectioning commands. Section commands offer a choice
+node to cycle between no label and \label{prefix:...}.
+
+    `PART`      \part{}
+    `CHA`       \chapter{}
+    `SSE`       \section{}
+    `SSS`       \subsection{}
+    `SS2`       \subsubsection{}
+    `SS*`       \subsection*{}
+    `RED`       \textcolor{red}{}
+    `GREEN`     \textcolor{green}{}
+
+Manual: ~
+
+    `href`      \href{url}{display}
+    `ph`        \placeholder
+
+------------------------------------------------------------------------------
+9.5 TEXT ABBREVIATIONS                       *noethervim-tex-abbreviations*
+
+Auto-expanding abbreviations for common mathematical phrases.
+
+    `tfae`              the following are equivalent
+    `Tfae`              The following are equivalent
+    `TFAE`              the following are equivalent
+    `iff`               if and only if (text) / \text{ if and only if } (math)
+    `wrt`               with respect to
+    `wlog` / `WLOG`     (without/Without) loss of generality
+    `ftsoc` / `FTSOC`   (for/For) the sake of contradiction
+    `st `               such that (regex, preserves leading whitespace)
+    `otoh` / `OTOH`     (on/On) the other hand
+    `LHS` / `RHS`       left/right hand side
+    `SES`               short exact sequence
+    `LES`               long exact sequence
+    `EES`               exact sequence
+    `fg`                finitely generated
+    `fdim`              finite dimensional
+    `fdvsp`             finite dimensional vector space
+    `ndvsp`             $n$ dimensional vector space
+    `VSP`               vector space
+    `IPSP`              inner product space
+    `awsts`             as we sought to show
+    `ctp`               completing the proof
+    `RRR`               \textcolor{red}{ref:HERE}
+
+------------------------------------------------------------------------------
+9.6 PREAMBLE TEMPLATES                           *noethervim-tex-preamble*
+
+Active only outside \begin{document} at line start. All auto triggers.
+
+Document types: ~
+
+    `book`      Full book (title, TOC, preamble import options)
+    `article`   Article with optional title
+    `paper`     Research paper with abstract
+    `hw`        Homework (auto-imports packages, commands, proofs)
+    `beamer`    Beamer presentation
+
+Preamble modules (import from preamble folder): ~
+
+    `packages`      LaTeX packages
+    `commands`      Custom \newcommand definitions
+    `bib`           Bibliography setup (biblatex + \addbibresource)
+    `formatting`    Book formatting (title format, footer)
+    `tcolorbox`     Theorem box environments
+    `languages`     Language setup (Devanagari, Japanese)
+    `proof`         Proof environment only
+    `dynkin`        Dynkin diagram environment
+    `all`           All of the above
+
+==============================================================================
+10. CUSTOM SNIPPETS                          *noethervim-tex-custom-snippets*
+
+Create `.lua` files in `~/.config/nvim/LuaSnip/tex/` (or wherever your
+LuaSnip user snippets live). LuaSnip auto-loads them alongside the
+plugin's built-in snippets.
+
+Access the helper API: >lua
+    local helper = require("noethervim-tex").luasnip_helper
+    local tex_utils = helper.tex_utils
+    local get_visual = helper.get_visual_node
+<
+
+Example custom snippet: >lua
+    local ls = require("luasnip")
+    local s = ls.snippet
+    local t = ls.text_node
+    local i = ls.insert_node
+    local fmta = require("luasnip.extras.fmt").fmta
+    local helper = require("noethervim-tex").luasnip_helper
+    local tex_utils = helper.tex_utils
+
+    return {
+      s({ trig = "mycmd", dscr = "My custom command" },
+        fmta([[\mycmd{<>}]], { i(1) }),
+        { condition = tex_utils.in_text }
+      ),
+    }
+<
+
+------------------------------------------------------------------------------
+10.1 HELPER API                                  *noethervim-tex-helpers*
+
+Environment detection (`tex_utils`): ~
+
+    `in_mathzone()`     Inside a math zone
+    `in_text()`         Inside document, outside math
+    `in_document()`     Inside \begin{document}
+    `in_preamble()`     Outside document, at line start
+    `in_env(name)`      Inside a specific environment
+    `in_comment()`      Inside a comment
+    `in_equation()`     Inside equation environment
+    `in_align()`        Inside align or align*
+    `in_itemize()`      Inside itemize
+    `in_cases()`        Inside cases
+    `in_tikz()`         Inside tikzpicture
+
+Visual selection helpers: ~
+
+    `get_visual_node(args, parent)`
+        Returns visual selection as text node, or empty insert node.
+
+    `get_visual_insert_node(args, parent)`
+        Returns insert node pre-filled with visual selection.
+
+    `get_visual_space_insert_node(args, parent)`
+        Same as above, with leading whitespace trimmed.
+
+Other helpers: ~
+
+    `mat(args, snip)`           Generate M-by-N matrix nodes
+    `square_mat(args, snip)`    Generate N-by-N matrix nodes
+    `titlecase(str)`            Convert string to title case
+    `makeRefTag(str)`           Generate abbreviated reference labels
+    `subfigures(args, snip)`    Generate N subfigure nodes
+    `in_latex()`                Detect LaTeX math in non-LaTeX files
+
+==============================================================================
+11. STRUCTURE                                    *noethervim-tex-structure*
+
+>
+    noethervim-tex/
+    |-- lua/noethervim-tex/
+    |   |-- init.lua                    setup, config, public API
+    |   |-- luasnip_helper.lua          shared snippet utilities
+    |   |-- treesitter_textobjects.lua  navigation keymaps
+    |   `-- sources/
+    |       `-- preambles.lua           blink.cmp preamble source
+    |-- LuaSnip/tex/
+    |   |-- math.lua                    math mode snippets
+    |   |-- environments.lua            environment snippets
+    |   |-- fonts.lua                   text formatting snippets
+    |   |-- commands.lua                document structure snippets
+    |   |-- preamble.lua                preamble template snippets
+    |   |-- text-Acronym.lua            text abbreviations
+    |   `-- temporary.lua               miscellaneous snippets
+    |-- queries/latex/
+    |   |-- textobjects.scm             treesitter queries for navigation
+    |   `-- highlights.scm              custom syntax highlights
+    |-- spell/
+    |   |-- en.utf-8.add                mathematical spell dictionary
+    |   `-- en.utf-8.add.spl            compiled dictionary
+    `-- doc/
+        `-- noethervim-tex.txt          this file
+<
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
