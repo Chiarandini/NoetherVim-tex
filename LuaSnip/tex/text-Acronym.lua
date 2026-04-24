@@ -143,10 +143,6 @@ return
 	s(
 	{trig = 'RHS', name = 'right hand side'},
 	t('right hand side')	),
-	-- left hand side
-	s(
-	{trig = 'RRR', name = 'ref:HERE'},
-	t('\\textcolor{red}{ref:HERE}')	),
 	-- otoh
 	s(
 	{trig = 'otoh', name = 'on the other hand'},
@@ -179,15 +175,6 @@ return
 			condition = tex_utils.in_mathzone
 		}
 		),
-	-- Fix ">" to "." mistake
-	-- s(
-	-- 	{trig = '>', wortTrig=false, name = 'if and only if'},
-	-- 	t('.'),
-	-- 	{
-	-- 		condition = tex_utils.in_text
-	-- 	}
-	-- 	),
-
 --  ╒══════════════════════════════════════════════════════════╕
 --  │                         reg-trig                         │
 --  ╘══════════════════════════════════════════════════════════╛
@@ -198,20 +185,6 @@ return
 		{
 			f(function(_, snip) return snip.captures[1] end),
 			t('such that '),
-		}
-	),
-	s(
-		{trig = "<", name ="shift comma"},
-		{t(",")},
-		{
-			condition = tex_utils.in_text
-		}
-	),
-	s(
-		{trig = ">", name ="shift dot"},
-		{t(".")},
-		{
-			condition = tex_utils.in_text
 		}
 	),
 

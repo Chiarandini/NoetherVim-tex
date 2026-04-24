@@ -67,8 +67,8 @@ function M.get_visual_text(args, parent)
 	return parent.snippet.env.LS_SELECT_RAW
 end
 
----Returns whether the cursor is at the start of a line with a ":" (for my personal tcolor
---environments)
+---Returns whether the cursor is at the start of a line with a ":" (for tcolorbox
+--environments like :thm, :defn, etc.)
 ---@return boolean
 function M.at_line_start_tcolor(_, _)
 	local in_doc = vim.fn["vimtex#env#is_inside"]('document')

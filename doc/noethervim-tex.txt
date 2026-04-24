@@ -20,7 +20,6 @@ CONTENTS                                            *noethervim-tex-contents*
        9.3 Text formatting ................. |noethervim-tex-fonts|
        9.4 Document structure .............. |noethervim-tex-commands|
        9.5 Text abbreviations .............. |noethervim-tex-abbreviations|
-       9.6 Preamble templates .............. |noethervim-tex-preamble|
    10. Custom snippets ..................... |noethervim-tex-custom-snippets|
        10.1 Helper API ..................... |noethervim-tex-helpers|
    11. Structure ........................... |noethervim-tex-structure|
@@ -32,11 +31,11 @@ noethervim-tex is a LaTeX companion plugin for Neovim, built for
 mathematical writing. It provides:
 
 - Context-aware LuaSnip snippet collection (math, environments, fonts,
-  preamble templates, text abbreviations, document structure)
+  text abbreviations, document structure)
 - Treesitter textobject navigation for theorem-proof workflows
 - blink.cmp preamble completion source
 - Custom treesitter highlight queries
-- Spell dictionary of 1000+ mathematical and academic terms
+- Spell dictionary of 900+ mathematical and academic terms
 
 The plugin is standalone but integrates seamlessly with NoetherVim as
 part of its `latex` bundle.
@@ -79,7 +78,7 @@ Options: ~
 
     `preamble_folder`     (string, default: stdpath("config")/preamble/)
         Directory containing `.tex` preamble files used by the preamble
-        completion source and preamble template snippets.
+        completion source.
 
     `extra_snippet_paths`  (table, default: {})
         Additional directories for LuaSnip to lazy-load snippets from.
@@ -135,7 +134,7 @@ Custom treesitter highlight queries (extend the default latex queries):
 ==============================================================================
 8. SPELL DICTIONARY                                  *noethervim-tex-spell*
 
-Ships `spell/en.utf-8.add` containing 1000+ mathematical and academic
+Ships `spell/en.utf-8.add` containing 900+ mathematical and academic
 terms so they are not flagged by Neovim's spell checker. Includes:
 
 - Mathematical concepts (homology, cohomology, isomorphism, ...)
@@ -149,7 +148,7 @@ when spell checking is enabled in a tex buffer.
 9. SNIPPETS                                      *noethervim-tex-snippets*
 
 All snippets are LuaSnip snippets loaded from `LuaSnip/tex/`. They are
-organized into seven files by category.
+organized into five files by category.
 
 Snippets are either manual (expand with LuaSnip expand key) or auto
 (expand immediately when the trigger is typed in the correct context).
@@ -324,32 +323,6 @@ Auto-expanding abbreviations for common mathematical phrases.
     `IPSP`              inner product space
     `awsts`             as we sought to show
     `ctp`               completing the proof
-    `RRR`               \textcolor{red}{ref:HERE}
-
-------------------------------------------------------------------------------
-9.6 PREAMBLE TEMPLATES                           *noethervim-tex-preamble*
-
-Active only outside \begin{document} at line start. All auto triggers.
-
-Document types: ~
-
-    `book`      Full book (title, TOC, preamble import options)
-    `article`   Article with optional title
-    `paper`     Research paper with abstract
-    `hw`        Homework (auto-imports packages, commands, proofs)
-    `beamer`    Beamer presentation
-
-Preamble modules (import from preamble folder): ~
-
-    `packages`      LaTeX packages
-    `commands`      Custom \newcommand definitions
-    `bib`           Bibliography setup (biblatex + \addbibresource)
-    `formatting`    Book formatting (title format, footer)
-    `tcolorbox`     Theorem box environments
-    `languages`     Language setup (Devanagari, Japanese)
-    `proof`         Proof environment only
-    `dynkin`        Dynkin diagram environment
-    `all`           All of the above
 
 ==============================================================================
 10. CUSTOM SNIPPETS                          *noethervim-tex-custom-snippets*
@@ -434,9 +407,7 @@ Other helpers: ~
     |   |-- environments.lua            environment snippets
     |   |-- fonts.lua                   text formatting snippets
     |   |-- commands.lua                document structure snippets
-    |   |-- preamble.lua                preamble template snippets
-    |   |-- text-Acronym.lua            text abbreviations
-    |   `-- temporary.lua               miscellaneous snippets
+    |   `-- text-Acronym.lua            text abbreviations
     |-- queries/latex/
     |   |-- textobjects.scm             treesitter queries for navigation
     |   `-- highlights.scm              custom syntax highlights

@@ -1,6 +1,6 @@
 # noethervim-tex
 
-A LaTeX companion plugin for Neovim, built for mathematical writing. Provides context-aware LuaSnip snippets, treesitter textobject navigation, a preamble completion source, custom syntax highlights, and a spell dictionary of 1000+ mathematical terms.
+A LaTeX companion plugin for Neovim, built for mathematical writing. Provides context-aware LuaSnip snippets, treesitter textobject navigation, a preamble completion source, custom syntax highlights, and a spell dictionary of 900+ mathematical terms.
 
 Standalone by design, but integrates seamlessly with [NoetherVim](https://github.com/Chiarandini/NoetherVim) as part of its `latex` bundle.
 
@@ -98,13 +98,13 @@ Custom highlight queries for:
 
 ### Spell dictionary
 
-Ships `spell/en.utf-8.add` with 1000+ mathematical and academic terms (homomorphism, Noetherian, cohomology, etc.) so they are not flagged by spell check.
+Ships `spell/en.utf-8.add` with 900+ mathematical and academic terms (homomorphism, Noetherian, cohomology, etc.) so they are not flagged by spell check.
 
 ---
 
 ## Snippets
 
-All snippets are LuaSnip snippets loaded from the plugin's `LuaSnip/tex/` directory. They are organized into seven files by category. Many support visual selection — select text, press the snippet trigger, and the selection wraps into the expanded snippet.
+All snippets are LuaSnip snippets loaded from the plugin's `LuaSnip/tex/` directory. They are organized into five files by category. Many support visual selection — select text, press the snippet trigger, and the selection wraps into the expanded snippet.
 
 Snippets are either **manual** (expand with the LuaSnip expand key) or **auto** (expand immediately when the trigger is typed in the correct context).
 
@@ -283,35 +283,6 @@ Auto-expanding abbreviations for common mathematical phrases.
 | `VSP` / `IPSP` | vector space / inner product space |
 | `awsts` | as we sought to show |
 | `ctp` | completing the proof |
-| `RRR` | `\textcolor{red}{ref:HERE}` |
-
-### Preamble templates
-
-Active only outside `\begin{document}` (at line start). All auto triggers.
-
-**Document types**:
-
-| Trigger | Description |
-|---|---|
-| `book` | Full book with title, TOC, preamble options |
-| `article` | Article with optional title |
-| `paper` | Research paper with abstract |
-| `hw` | Homework (auto-imports packages, commands, proofs) |
-| `beamer` | Beamer presentation |
-
-**Preamble modules** (import from preamble folder):
-
-| Trigger | Imports |
-|---|---|
-| `packages` | LaTeX packages |
-| `commands` | Custom `\newcommand` definitions |
-| `bib` | Bibliography setup (biblatex) |
-| `formatting` | Book formatting (title format, footer) |
-| `tcolorbox` | Theorem box environments (lem, prop, thm, cor, defn, etc.) |
-| `languages` | Language setup (Devanagari, Japanese) |
-| `proof` | Proof environment only |
-| `dynkin` | Dynkin diagram environment |
-| `all` | All of the above |
 
 ---
 
@@ -379,9 +350,7 @@ noethervim-tex/
 │   ├── environments.lua          <- environment snippets
 │   ├── fonts.lua                 <- text formatting snippets
 │   ├── commands.lua              <- document structure snippets
-│   ├── preamble.lua              <- preamble template snippets
-│   ├── text-Acronym.lua          <- text abbreviations
-│   └── temporary.lua             <- miscellaneous snippets
+│   └── text-Acronym.lua          <- text abbreviations
 ├── queries/latex/
 │   ├── textobjects.scm           <- treesitter queries for navigation
 │   └── highlights.scm            <- custom syntax highlights
