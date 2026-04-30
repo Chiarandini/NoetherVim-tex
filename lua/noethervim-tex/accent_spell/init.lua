@@ -145,38 +145,65 @@ local function resolve_target(word)
   return tok.decoded
 end
 
----@param word? string  override; default uses cword
+---Add a word to the user spellfile.  If a word is given explicitly
+---(decoded if it's a LaTeX form), uses it; otherwise looks for an
+---accented token under the cursor; otherwise falls through to vim's
+---native :spellgood <cword> via  normal! zg .  Net effect: bind this
+---to  zg  and the right thing happens regardless of where the cursor
+---is.
+---@param word? string
 function M.add(word)
-  local target = resolve_target(word)
-  if not target then
-    notify("no accented token under cursor", vim.log.levels.WARN)
+  if word and word ~= "" then
+    local decoder = require("noethervim-tex.accent_spell.decoder")
+    local target = decoder.decode(word) or word
+    vim.cmd("silent! spellgood " .. vim.fn.fnameescape(target))
+    notify(("added %q to spellfile"):format(target))
+    M.refresh()
     return
   end
-  vim.cmd("silent! spellgood " .. vim.fn.fnameescape(target))
-  notify(("added %q to spellfile"):format(target))
+  local tok = token_under_cursor()
+  if tok then
+    vim.cmd("silent! spellgood " .. vim.fn.fnameescape(tok.decoded))
+    notify(("added %q to spellfile"):format(tok.decoded))
+    M.refresh()
+    return
+  end
+  -- No accent token; defer to vim's native zg.
+  vim.cmd("silent! normal! zg")
   M.refresh()
 end
 
+---Mark a word wrong; same fall-through pattern as M.add.
 ---@param word? string
 function M.mark_wrong(word)
-  local target = resolve_target(word)
-  if not target then
-    notify("no accented token under cursor", vim.log.levels.WARN)
+  if word and word ~= "" then
+    local decoder = require("noethervim-tex.accent_spell.decoder")
+    local target = decoder.decode(word) or word
+    vim.cmd("silent! spellwrong " .. vim.fn.fnameescape(target))
+    notify(("marked %q as misspelled"):format(target))
+    M.refresh()
     return
   end
-  vim.cmd("silent! spellwrong " .. vim.fn.fnameescape(target))
-  notify(("marked %q as misspelled"):format(target))
+  local tok = token_under_cursor()
+  if tok then
+    vim.cmd("silent! spellwrong " .. vim.fn.fnameescape(tok.decoded))
+    notify(("marked %q as misspelled"):format(tok.decoded))
+    M.refresh()
+    return
+  end
+  vim.cmd("silent! normal! zw")
   M.refresh()
 end
 
 ---Open a picker over spellsuggest() results for the cword's decoded
----form.  The selected suggestion replaces the original LaTeX-encoded
----token with its Unicode form.  Re-encoding back to LaTeX is left for
----the user (a deliberate scope cut -- there is no canonical re-encoder).
+---form.  The selected suggestion is RE-ENCODED back to its canonical
+---LaTeX-accented form before replacing the original token, so the
+---authoring style stays LaTeX.  Falls through to vim's native  z=
+---when there's no accent token under the cursor.
 function M.suggest()
   local tok = token_under_cursor()
   if not tok then
-    notify("no accented token under cursor", vim.log.levels.WARN)
+    vim.cmd("silent! normal! z=")
     return
   end
   local suggestions = vim.fn.spellsuggest(tok.decoded, 8, 1)
@@ -184,12 +211,15 @@ function M.suggest()
     notify(("no suggestions for %q"):format(tok.decoded))
     return
   end
+  local decoder = require("noethervim-tex.accent_spell.decoder")
   vim.ui.select(suggestions, {
     prompt = ("Suggestions for %q:"):format(tok.decoded),
+    format_item = function(s) return s .. "  ->  " .. decoder.encode(s) end,
   }, function(choice)
     if not choice then return end
     local row = vim.api.nvim_win_get_cursor(0)[1] - 1
-    vim.api.nvim_buf_set_text(0, row, tok.start_col - 1, row, tok.end_col, { choice })
+    local replacement = decoder.encode(choice)
+    vim.api.nvim_buf_set_text(0, row, tok.start_col - 1, row, tok.end_col, { replacement })
     M.refresh()
   end)
 end

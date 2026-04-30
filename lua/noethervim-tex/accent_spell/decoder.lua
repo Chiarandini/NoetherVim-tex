@@ -70,33 +70,59 @@ local ROWS = {
   { "\\i","ì","í","î","ï","ĩ","į","" ,"" ,"" ,"" ,"" ,"ĭ",""  },
 }
 
--- key:  accent .. letter   (e.g. '"a',  'Ho',  '"\\i')
--- value: Unicode replacement
-local LOOKUP = {}
-
-local function rebuild_lookup()
-  LOOKUP = {}
-  for _, row in ipairs(ROWS) do
-    local letter = row[1]
-    for col = 2, 14 do
-      local target = row[col]
-      if target ~= "" then
-        LOOKUP[ACCENT_KEYS[col - 1] .. letter] = target
-      end
-    end
-  end
-  -- Standalone dotless letters.
-  LOOKUP["\\i"] = "ı"
-  LOOKUP["\\j"] = "ȷ"
-end
-rebuild_lookup()
-
 -- Punctuation accents: usable as bare \"a or braced \"{a}.
 local PUNCT_ACCENTS = "`'^\"~.="
 
 -- Letter accents: only valid braced (\H{o}, \v{c}); a bare \H is not
 -- an accent macro by itself.
 local LETTER_ACCENTS = "cHkruv"
+
+-- key:  accent .. letter   (e.g. '"a',  'Ho',  '"\\i')
+-- value: Unicode replacement
+local LOOKUP = {}
+
+-- Inverse: Unicode codepoint -> structured record
+--   { type = "punct",   accent = '"', letter = "a" }   -- \"a
+--   { type = "letter",  accent = "H", letter = "o" }   -- \H{o}
+--   { type = "literal", form   = "\\i"          }      -- \i
+-- For codepoints reachable from multiple sources (e.g. ï  via either
+-- "i  or  "\i) the first encountered entry wins -- dotted-letter forms
+-- come first in ROWS, so we encode  ï  as  \"i  (the standard form)
+-- rather than the Turkish-style  \"\i.
+local INVERSE = {}
+
+local function rebuild_lookup()
+  LOOKUP = {}
+  INVERSE = {}
+  for _, row in ipairs(ROWS) do
+    local letter = row[1]
+    for col = 2, 14 do
+      local target = row[col]
+      if target ~= "" then
+        local accent = ACCENT_KEYS[col - 1]
+        LOOKUP[accent .. letter] = target
+
+        if not INVERSE[target] then
+          local kind = (LETTER_ACCENTS:find(accent, 1, true) ~= nil)
+            and "letter" or "punct"
+          if letter == "\\i" or letter == "\\j" then
+            -- Skip: dotted-letter rows already wrote a "punct" entry
+            -- for this codepoint (or there's no dotted alternative,
+            -- in which case round-tripping is exotic enough to
+            -- punt on).
+          else
+            INVERSE[target] = { type = kind, accent = accent, letter = letter }
+          end
+        end
+      end
+    end
+  end
+  -- Standalone dotless letters.
+  LOOKUP["\\i"] = "ı"
+  LOOKUP["\\j"] = "ȷ"
+  INVERSE["ı"] = { type = "literal", form = "\\i" }
+  INVERSE["ȷ"] = { type = "literal", form = "\\j" }
+end
 
 local function is_in(haystack, needle)
   return haystack:find(needle, 1, true) ~= nil
@@ -195,13 +221,60 @@ end
 function M.extend(extras)
   for key, value in pairs(extras or {}) do
     LOOKUP[key] = value
+    if not INVERSE[value] then
+      local accent = key:sub(1, 1)
+      local letter = key:sub(2)
+      local kind = (LETTER_ACCENTS:find(accent, 1, true) ~= nil)
+        and "letter" or "punct"
+      if letter ~= "\\i" and letter ~= "\\j" then
+        INVERSE[value] = { type = kind, accent = accent, letter = letter }
+      end
+    end
   end
+end
+
+-- UTF-8 character iterator over a Lua byte-string.
+local function utf8_chars(s)
+  return s:gmatch("[%z\1-\127\194-\244][\128-\191]*")
+end
+
+---Re-encode a Unicode word back to its canonical LaTeX-accented form.
+---Inverse of  M.decode :
+---   Kähler   -> K\"ahler
+---   Erdős    -> Erd\H{o}s
+---   Poincaré -> Poincar\'e
+---   façade   -> fa\c{c}ade
+---   ı        -> \i
+---Codepoints with no LaTeX accent representation pass through
+---unchanged (so plain ASCII text is a fixed point).
+---@param word string?
+---@return string
+function M.encode(word)
+  if word == nil then return "" end
+  if word == "" then return "" end
+  local out = {}
+  for c in utf8_chars(word) do
+    local m = INVERSE[c]
+    if not m then
+      out[#out + 1] = c
+    elseif m.type == "literal" then
+      out[#out + 1] = m.form
+    elseif m.type == "punct" then
+      out[#out + 1] = "\\" .. m.accent .. m.letter
+    elseif m.type == "letter" then
+      out[#out + 1] = "\\" .. m.accent .. "{" .. m.letter .. "}"
+    end
+  end
+  return table.concat(out)
 end
 
 ---Reset the lookup table to ship defaults.  Test-only entry point.
 function M._reset()
   rebuild_lookup()
 end
+
+-- Initial build now that all locals are in scope.
+rebuild_lookup()
 
 ---Internal access for tests / debugging.
 ---@return table<string, string>

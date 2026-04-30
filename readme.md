@@ -130,13 +130,15 @@ Commands:
 | `:NoetherTexAccentMarkWrong [word]` | `:spellwrong` the decoded form |
 | `:NoetherTexAccentSuggest` | `vim.ui.select` over `spellsuggest()` results |
 
-`<Plug>` mappings (no default keys; bind whatever you like):
+`<Plug>` mappings (no default keys; bind whatever you like). The `add`/`mark_wrong`/`suggest` functions all fall through to vim's native `zg`/`zw`/`z=` when there's no accent token under the cursor, so it's safe to override the lowercase keys directly:
 
 ```lua
-vim.keymap.set("n", "zG", "<Plug>(noethervim-tex-accent-add)",         { desc = "spell: add accented word" })
-vim.keymap.set("n", "zW", "<Plug>(noethervim-tex-accent-mark-wrong)", { desc = "spell: mark accented word wrong" })
-vim.keymap.set("n", "z=", "<Plug>(noethervim-tex-accent-suggest)",    { desc = "spell: suggest accented form" })
+vim.keymap.set("n", "zg", "<Plug>(noethervim-tex-accent-add)",        { remap = true, desc = "spell: add (latex-aware)" })
+vim.keymap.set("n", "zw", "<Plug>(noethervim-tex-accent-mark-wrong)", { remap = true, desc = "spell: mark wrong (latex-aware)" })
+vim.keymap.set("n", "z=", "<Plug>(noethervim-tex-accent-suggest)",    { remap = true, desc = "spell: suggest (latex-aware)" })
 ```
+
+`z=` re-encodes the chosen Unicode suggestion back to its LaTeX form before replacing — so picking `Kähler` from the picker writes `K\"ahler` back to the buffer.
 
 Configuration:
 

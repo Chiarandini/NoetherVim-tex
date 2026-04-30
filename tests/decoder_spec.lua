@@ -191,6 +191,54 @@ describe("decoder.decode", function()
     end)
   end)
 
+  describe("M.encode (Unicode -> LaTeX)", function()
+    it("encodes proper nouns to bare punct accents", function()
+      assert.are.equal("K\\\"ahler",      decoder.encode("Kähler"))
+      assert.are.equal("H\\\"older",      decoder.encode("Hölder"))
+      assert.are.equal("Schr\\\"odinger", decoder.encode("Schrödinger"))
+      assert.are.equal("M\\\"obius",      decoder.encode("Möbius"))
+      assert.are.equal("Poincar\\'e",     decoder.encode("Poincaré"))
+      assert.are.equal("B\\'ezier",       decoder.encode("Bézier"))
+    end)
+    it("encodes letter accents with required braces", function()
+      assert.are.equal("Erd\\H{o}s",  decoder.encode("Erdős"))
+      assert.are.equal("fa\\c{c}ade", decoder.encode("façade"))
+    end)
+    it("preserves multi-accent words", function()
+      assert.are.equal("r\\'esum\\'e", decoder.encode("résumé"))
+      assert.are.equal("\\'etal\\'e",  decoder.encode("étalé"))
+    end)
+    it("passes ASCII text through unchanged", function()
+      assert.are.equal("hello world", decoder.encode("hello world"))
+      assert.are.equal("Kahler",      decoder.encode("Kahler"))
+      assert.are.equal("",            decoder.encode(""))
+    end)
+    it("encodes standalone dotless letters", function()
+      assert.are.equal("\\i", decoder.encode("ı"))
+      assert.are.equal("\\j", decoder.encode("ȷ"))
+    end)
+    it("prefers dotted-letter form for ï (so \"i not \"\\i)", function()
+      assert.are.equal("na\\\"ive", decoder.encode("naïve"))
+    end)
+    it("round-trips: decode . encode = identity", function()
+      local raws = {
+        'K\\"ahler', "Erd\\H{o}s", "Poincar\\'e", "Schr\\\"odinger",
+        "fa\\c{c}ade", "r\\'esum\\'e", "\\'etal\\'e", "M\\\"obius",
+        "Caf\\'e",
+      }
+      for _, raw in ipairs(raws) do
+        assert.are.equal(raw, decoder.encode(decoder.decode(raw)))
+      end
+    end)
+    it("respects extend()-added entries in inverse", function()
+      -- Pick a codepoint guaranteed not to collide with vimtex's table
+      -- (★ is U+2605 -- not an accented latin letter, so the inverse
+      -- table doesn't already know about it).
+      decoder.extend({ ['"q'] = "★" })
+      assert.are.equal('\\"q', decoder.encode("★"))
+    end)
+  end)
+
   describe("vimtex table fidelity", function()
     -- Spot-check: every accent the upstream table defines for at
     -- least one letter must produce a non-empty Unicode result.

@@ -37,15 +37,16 @@ function M.refresh(bufnr, config)
 
   local diagnostics = {}
   for _, tok in ipairs(tokens) do
-    -- Suppress vim's native spell highlight on every decoded token,
-    -- math or not.  Math regions are typically @NoSpell already, so
-    -- the extmark is harmless there; outside math it stops the
-    -- fragment-level red underline.
-    vim.api.nvim_buf_set_extmark(bufnr, NS_SUPPRESS, tok.range[1], tok.range[2], {
+    -- Build extmark attrs.  spell=false disables vim's native
+    -- fragment-level squiggle on this span.  For typo tokens we also
+    -- attach hl_group=SpellBad so the user gets the visual signal
+    -- they expect (red underline) on the WHOLE token, not on the
+    -- broken-letter fragment that vim's tokeniser would otherwise see.
+    local attrs = {
       end_row = tok.range[3],
       end_col = tok.range[4],
       spell = false,
-    })
+    }
 
     if not tok.is_in_math then
       local res = vim.fn.spellbadword(tok.decoded)
@@ -60,8 +61,11 @@ function M.refresh(bufnr, config)
           message  = ("possible misspelling: %s"):format(tok.decoded),
           user_data = { raw = tok.raw, decoded = tok.decoded },
         }
+        attrs.hl_group = "SpellBad"
       end
     end
+
+    vim.api.nvim_buf_set_extmark(bufnr, NS_SUPPRESS, tok.range[1], tok.range[2], attrs)
   end
 
   vim.diagnostic.set(NS_DIAG, bufnr, diagnostics)
