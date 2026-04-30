@@ -106,6 +106,70 @@ describe("accent_spell.refresh", function()
   end)
 end)
 
+describe("accent_spell native-spell suppression (extmarks)", function()
+  before_each(function()
+    accent.setup({ enabled = true })
+  end)
+
+  local function suppress_extmarks(buf)
+    return vim.api.nvim_buf_get_extmarks(
+      buf, diagnostics.suppress_namespace(), 0, -1, { details = true })
+  end
+
+  it("drops a spell=false extmark over every decoded token", function()
+    local buf = setup_buf({ "K\\\"ahler and Erd\\H{o}s." })
+    accent.refresh(buf)
+    local marks = suppress_extmarks(buf)
+    assert.are.equal(2, #marks)
+    -- Each extmark must carry spell = false in its details.
+    for _, m in ipairs(marks) do
+      assert.is_false(m[4].spell)
+    end
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+
+  it("extmark range matches the token range", function()
+    local buf = setup_buf({ 'X K\\"ahler X' })
+    accent.refresh(buf)
+    local marks = suppress_extmarks(buf)
+    assert.are.equal(1, #marks)
+    -- Extmark format: { id, row, col, details }
+    assert.are.equal(0, marks[1][2])         -- start row
+    assert.are.equal(2, marks[1][3])         -- start col (start of K)
+    assert.are.equal(0, marks[1][4].end_row)
+    assert.are.equal(10, marks[1][4].end_col) -- end col after r
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+
+  it("clears suppressions when the feature is disabled", function()
+    local buf = setup_buf({ "K\\\"ahler form." })
+    accent.refresh(buf)
+    assert.is_true(#suppress_extmarks(buf) > 0)
+    accent.disable(buf)
+    assert.are.equal(0, #suppress_extmarks(buf))
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+
+  it("re-creates suppressions on subsequent refresh", function()
+    local buf = setup_buf({ "K\\\"ahler form." })
+    accent.refresh(buf)
+    local first = #suppress_extmarks(buf)
+    accent.refresh(buf)
+    assert.are.equal(first, #suppress_extmarks(buf))
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+
+  it("suppresses native spell even when our diagnostic also fires", function()
+    -- Köhler is a real-world undecodable-as-correct case; both layers
+    -- should fire (suppress + diagnostic).
+    local buf = setup_buf({ "K\\\"ohler manifold." })
+    accent.refresh(buf)
+    assert.are.equal(1, #suppress_extmarks(buf))
+    assert.are.equal(1, #get_diags(buf))
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+end)
+
 describe("accent_spell.is_enabled", function()
   it("returns global default when no override", function()
     accent.setup({ enabled = true })
