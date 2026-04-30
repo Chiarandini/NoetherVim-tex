@@ -199,10 +199,15 @@ parser. If the parser is missing the feature degrades to no-op.
 
 `:NoetherTexAccentSuggest`
                 Open `vim.ui.select` over `spellsuggest()` results for
-                the decoded form. The chosen suggestion replaces the
-                LaTeX-encoded token in the buffer with its Unicode
-                form. (Re-encoding back to LaTeX is left to you --
-                authoring style is personal.)
+                the decoded form. The chosen suggestion is RE-ENCODED
+                back to its LaTeX form before replacing the buffer
+                token, so picking `Kähler` writes `K\"ahler`.
+
+`:NoetherTexAccentDiagnostic {on|off|toggle}`
+                Globally turn the INFO diagnostic on or off without
+                touching the SpellBad red squiggle.  Useful when the
+                diagnostic-list / signcolumn / Trouble entry feels
+                noisy and the visual highlight is enough.
 
 8.5 <Plug> mappings                          *noethervim-tex-accent-plugs*
 
@@ -231,17 +236,24 @@ before replacing -- picking Kähler writes K\"ahler to the buffer.
 >
     require("noethervim-tex").setup({
       accent_spell = {
-        enabled        = true,                            -- default
-        severity       = vim.diagnostic.severity.INFO,    -- HINT|INFO|WARN
-        debounce_ms    = 250,                             -- default
-        decoder_extras = {                                -- map (accent
-          ['"y'] = 'ÿ',                                  --  + letter)
-        },                                                --  -> unicode
+        enabled         = true,                            -- default
+        emit_diagnostic = true,                            -- INFO entry?
+        severity        = vim.diagnostic.severity.INFO,    -- HINT|INFO|WARN
+        debounce_ms     = 250,                             -- default
+        decoder_extras  = {                                -- map (accent
+          ['"y'] = 'ÿ',                                   --  + letter)
+        },                                                 --  -> unicode
       },
     })
 <
-Set `enabled = false` to leave the feature dormant. Per-buffer
+Set `enabled = false` to leave the feature dormant.  Per-buffer
 overrides come from `:NoetherTexAccentSpell disable` in that buffer.
+
+`emit_diagnostic = false` keeps the SpellBad red-squiggle highlight
+but suppresses the `vim.diagnostic` entry -- so misspelled tokens
+still LOOK wrong but don't show up in `:Trouble`, signcolumn, or the
+diagnostic float.  Toggle at runtime with
+`:NoetherTexAccentDiagnostic`.
 
 ==============================================================================
 9. SNIPPETS                                      *noethervim-tex-snippets*

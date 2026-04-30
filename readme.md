@@ -73,6 +73,7 @@ Or via lazy.nvim `opts`:
 | `extra_snippet_paths` | table | `{}` | Additional directories for LuaSnip to load |
 | `textobjects` | boolean | `true` | Enable treesitter textobject keymaps |
 | `accent_spell.enabled` | boolean | `true` | Diagnostics for LaTeX-accented misspellings |
+| `accent_spell.emit_diagnostic` | boolean | `true` | Whether to emit the INFO `vim.diagnostic` entry; SpellBad highlight is independent |
 | `accent_spell.severity` | integer | `INFO` | `vim.diagnostic.severity.{HINT,INFO,WARN,ERROR}` |
 | `accent_spell.debounce_ms` | integer | `250` | Refresh debounce window |
 | `accent_spell.decoder_extras` | table | `{}` | `{ [accent..letter] = "unicode" }` overrides |
@@ -128,7 +129,8 @@ Commands:
 | `:NoetherTexAccentSpell {enable\|disable\|toggle}` | Per-buffer on/off |
 | `:NoetherTexAccentAdd [word]` | `:spellgood` the decoded form of cword (or arg) |
 | `:NoetherTexAccentMarkWrong [word]` | `:spellwrong` the decoded form |
-| `:NoetherTexAccentSuggest` | `vim.ui.select` over `spellsuggest()` results |
+| `:NoetherTexAccentSuggest` | `vim.ui.select` over `spellsuggest()` results; selection re-encoded to LaTeX |
+| `:NoetherTexAccentDiagnostic {on\|off\|toggle}` | Toggle the INFO diagnostic; SpellBad highlight stays |
 
 `<Plug>` mappings (no default keys; bind whatever you like). The `add`/`mark_wrong`/`suggest` functions all fall through to vim's native `zg`/`zw`/`z=` when there's no accent token under the cursor, so it's safe to override the lowercase keys directly:
 
@@ -145,13 +147,16 @@ Configuration:
 ```lua
 require("noethervim-tex").setup({
   accent_spell = {
-    enabled        = true,                            -- default
-    severity       = vim.diagnostic.severity.INFO,    -- HINT|INFO|WARN
-    debounce_ms    = 250,                             -- default
-    decoder_extras = { ['"y'] = "ÿ" },                -- map (accent..letter)
+    enabled         = true,                            -- default
+    emit_diagnostic = true,                            -- INFO entry alongside SpellBad highlight
+    severity        = vim.diagnostic.severity.INFO,    -- HINT|INFO|WARN
+    debounce_ms     = 250,                             -- default
+    decoder_extras  = { ['"y'] = "ÿ" },                -- map (accent..letter)
   },
 })
 ```
+
+If the INFO entry in `:Trouble` / signcolumn feels noisy, set `emit_diagnostic = false` (or run `:NoetherTexAccentDiagnostic off`). The red SpellBad highlight stays.
 
 See `:h noethervim-tex-accent-spell` for the full reference.
 

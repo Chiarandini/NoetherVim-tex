@@ -190,6 +190,68 @@ describe("accent_spell native-spell suppression (extmarks)", function()
   end)
 end)
 
+describe("accent_spell.set_diagnostic (gate INFO emission)", function()
+  before_each(function() accent.setup({ enabled = true }) end)
+
+  local function suppress_extmarks(buf)
+    return vim.api.nvim_buf_get_extmarks(
+      buf, diagnostics.suppress_namespace(), 0, -1, { details = true })
+  end
+
+  it("default emits the diagnostic and the SpellBad highlight", function()
+    local buf = setup_buf({ "K\\\"ohler manifold." })
+    accent.refresh(buf)
+    assert.are.equal(1, #get_diags(buf))
+    local marks = suppress_extmarks(buf)
+    assert.are.equal("SpellBad", marks[1][4].hl_group)
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+
+  it("set_diagnostic(false) clears diagnostics, keeps SpellBad", function()
+    local buf = setup_buf({ "K\\\"ohler manifold." })
+    accent.refresh(buf)
+    assert.is_true(#get_diags(buf) > 0)
+    accent.set_diagnostic(false)
+    -- set_diagnostic refreshes loaded tex buffers automatically.
+    assert.are.equal(0, #get_diags(buf))
+    local marks = suppress_extmarks(buf)
+    assert.are.equal("SpellBad", marks[1][4].hl_group)
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+
+  it("set_diagnostic(true) restores diagnostic emission", function()
+    local buf = setup_buf({ "K\\\"ohler manifold." })
+    accent.set_diagnostic(false)
+    accent.refresh(buf)
+    assert.are.equal(0, #get_diags(buf))
+    accent.set_diagnostic(true)
+    assert.are.equal(1, #get_diags(buf))
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+
+  it("set_diagnostic(nil) toggles", function()
+    accent.setup({ enabled = true, emit_diagnostic = true })
+    local buf = setup_buf({ "K\\\"ohler manifold." })
+    accent.refresh(buf)
+    local before = #get_diags(buf)
+    accent.set_diagnostic()  -- toggle -> off
+    assert.are.equal(0, #get_diags(buf))
+    accent.set_diagnostic()  -- toggle -> on
+    assert.are.equal(before, #get_diags(buf))
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+
+  it("setup({emit_diagnostic = false}) skips diagnostic from the start", function()
+    accent.setup({ enabled = true, emit_diagnostic = false })
+    local buf = setup_buf({ "K\\\"ohler manifold." })
+    accent.refresh(buf)
+    assert.are.equal(0, #get_diags(buf))
+    local marks = suppress_extmarks(buf)
+    assert.are.equal("SpellBad", marks[1][4].hl_group)
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+end)
+
 describe("accent_spell.is_enabled", function()
   it("returns global default when no override", function()
     accent.setup({ enabled = true })

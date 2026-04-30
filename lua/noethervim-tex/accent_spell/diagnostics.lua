@@ -51,17 +51,22 @@ function M.refresh(bufnr, config)
     if not tok.is_in_math then
       local res = vim.fn.spellbadword(tok.decoded)
       if res[1] and res[1] ~= "" then
-        diagnostics[#diagnostics + 1] = {
-          lnum     = tok.range[1],
-          col      = tok.range[2],
-          end_lnum = tok.range[3],
-          end_col  = tok.range[4],
-          severity = config.severity or vim.diagnostic.severity.INFO,
-          source   = "noethervim-tex.accent-spell",
-          message  = ("possible misspelling: %s"):format(tok.decoded),
-          user_data = { raw = tok.raw, decoded = tok.decoded },
-        }
+        -- Highlight always applies; diagnostic is gated so users can
+        -- silence the diagnostic-list / signcolumn / Trouble entry
+        -- while keeping the visual red squiggle.
         attrs.hl_group = "SpellBad"
+        if config.emit_diagnostic ~= false then
+          diagnostics[#diagnostics + 1] = {
+            lnum     = tok.range[1],
+            col      = tok.range[2],
+            end_lnum = tok.range[3],
+            end_col  = tok.range[4],
+            severity = config.severity or vim.diagnostic.severity.INFO,
+            source   = "noethervim-tex.accent-spell",
+            message  = ("possible misspelling: %s"):format(tok.decoded),
+            user_data = { raw = tok.raw, decoded = tok.decoded },
+          }
+        end
       end
     end
 

@@ -51,6 +51,28 @@ function M.register()
   end, {
     desc = "noethervim-tex: replace accented token with a spell suggestion",
   })
+
+  vim.api.nvim_create_user_command("NoetherTexAccentDiagnostic", function(opts)
+    local accent = require("noethervim-tex.accent_spell")
+    local arg = opts.args
+    if arg == "on" then
+      accent.set_diagnostic(true)
+    elseif arg == "off" then
+      accent.set_diagnostic(false)
+    elseif arg == "toggle" or arg == nil or arg == "" then
+      accent.set_diagnostic(nil)
+    else
+      vim.notify(
+        "[noethervim-tex] unknown subcommand: " .. tostring(arg)
+          .. " (expected on | off | toggle)",
+        vim.log.levels.ERROR
+      )
+    end
+  end, {
+    nargs = "?",
+    complete = function() return { "on", "off", "toggle" } end,
+    desc = "noethervim-tex: toggle the INFO diagnostic (SpellBad highlight stays)",
+  })
 end
 
 return M

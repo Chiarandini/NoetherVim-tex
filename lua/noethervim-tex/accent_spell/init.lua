@@ -21,6 +21,7 @@
 
 ---@class noethervim_tex.AccentSpellConfig
 ---@field enabled boolean
+---@field emit_diagnostic boolean -- emit vim.diagnostic entries; SpellBad highlight is independent
 ---@field severity integer        -- vim.diagnostic.severity.*
 ---@field debounce_ms integer
 ---@field decoder_extras table<string, string>
@@ -30,6 +31,7 @@ local M = {}
 
 local DEFAULTS = {
   enabled = true,
+  emit_diagnostic = true,
   severity = vim.diagnostic.severity.INFO,
   debounce_ms = 250,
   decoder_extras = {},
@@ -76,6 +78,27 @@ function M.disable(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   enabled_per_buf[bufnr] = false
   require("noethervim-tex.accent_spell.diagnostics").clear(bufnr)
+end
+
+---Globally enable / disable the INFO diagnostic without touching the
+---SpellBad highlight or the suppression extmarks.  Useful when the
+---diagnostic float / signcolumn entry feels noisy and the visual red
+---squiggle is enough.
+---@param value? boolean  nil = toggle
+function M.set_diagnostic(value)
+  if value == nil then
+    config.emit_diagnostic = not config.emit_diagnostic
+  else
+    config.emit_diagnostic = value and true or false
+  end
+  notify("info diagnostic " .. (config.emit_diagnostic and "enabled" or "disabled"))
+  -- Refresh visible buffers so existing diagnostics clear or re-emit.
+  for _, b in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(b) then
+      local ft = vim.bo[b].filetype
+      if ft == "tex" or ft == "latex" then M.refresh(b) end
+    end
+  end
 end
 
 ---@param bufnr? integer
