@@ -11,6 +11,12 @@
 ---     preamble_folder = "~/my/preambles/",   -- default: stdpath("config")/preamble/
 ---     extra_snippet_paths = { "~/my/snippets/" },  -- additional LuaSnip load paths
 ---     textobjects = true,                    -- default: true
+---     accent_spell = {                       -- default: enabled, INFO severity
+---       enabled = true,
+---       severity = vim.diagnostic.severity.INFO,
+---       debounce_ms = 250,
+---       decoder_extras = {},                 -- e.g. { ['"y'] = 'ÿ' }
+---     },
 ---   })
 ---
 --- Writing custom snippets:
@@ -59,6 +65,12 @@ function M.setup(opts)
   if M.config.textobjects then
     require("noethervim-tex.treesitter_textobjects").setup()
   end
+
+  -- Wire up the accent spell-check feature.  setup() patches defaults
+  -- and applies any decoder_extras; autocmds and user commands are
+  -- registered unconditionally in plugin/noethervim_tex.lua at plugin
+  -- load, so they work even if the user never calls this setup().
+  require("noethervim-tex.accent_spell").setup(opts.accent_spell)
 end
 
 --- Helper functions for LuaSnip tex snippets.
