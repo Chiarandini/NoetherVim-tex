@@ -13,7 +13,13 @@ CONTENTS                                            *noethervim-tex-contents*
     5. Textobject navigation ............... |noethervim-tex-textobjects|
     6. Preamble completion ................. |noethervim-tex-preamble-source|
     7. Treesitter highlights ............... |noethervim-tex-highlights|
-    8. Spell dictionary .................... |noethervim-tex-spell|
+    8. Spell ............................... |noethervim-tex-spell|
+       8.1 Math vocabulary ................. |noethervim-tex-spell-math|
+       8.2 Accent-name dictionary .......... |noethervim-tex-spell-accents|
+       8.3 Accent spell-check .............. |noethervim-tex-accent-spell|
+       8.4 Commands ........................ |noethervim-tex-accent-commands|
+       8.5 <Plug> mappings ................. |noethervim-tex-accent-plugs|
+       8.6 Configuration ................... |noethervim-tex-accent-config|
     9. Snippets ............................ |noethervim-tex-snippets|
        9.1 Environments .................... |noethervim-tex-environments|
        9.2 Math ............................ |noethervim-tex-math|
@@ -132,17 +138,106 @@ Custom treesitter highlight queries (extend the default latex queries):
   arguments as `@error`.
 
 ==============================================================================
-8. SPELL DICTIONARY                                  *noethervim-tex-spell*
+8. SPELL                                              *noethervim-tex-spell*
 
-Ships `spell/en.utf-8.add` containing 900+ mathematical and academic
-terms so they are not flagged by Neovim's spell checker. Includes:
+Two spell additions ship with the plugin and a diagnostics layer for
+LaTeX-encoded accented names.
+
+8.1 Math vocabulary                            *noethervim-tex-spell-math*
+
+`spell/en.utf-8.add` lists 900+ mathematical and academic terms so
+they are not flagged by Neovim's spell checker. Covers:
 
 - Mathematical concepts (homology, cohomology, isomorphism, ...)
 - Proper names (Noetherian, Riemann, Galois, ...)
 - Academic fields (algebraic geometry, topology, ...)
 
-The compiled `.spl` file is included. Neovim loads it automatically
-when spell checking is enabled in a tex buffer.
+8.2 Accent-name dictionary                  *noethervim-tex-spell-accents*
+
+`spell/accents.utf-8.add` lists the Unicode forms of common
+LaTeX-accented proper nouns: Kähler, Hölder, Erdős, Poincaré,
+Schrödinger, Möbius, Bézier, Bézout, Fréchet, Brézis, naïve, café,
+résumé, étalé, … plus a handful of broader entries (Łukasiewicz,
+Šostakovich, Rényi, Padé, Voronoï, …).
+
+Both .add files are compiled to .spl on plugin load and appended to
+your spellfile list. The user-facing spellfile (the one your config
+points `vim.o.spellfile` at) stays first in the list, so :spellgood
+writes there as expected; the shipped files are read-only from your
+session's perspective.
+
+8.3 Accent spell-check (diagnostics)    *noethervim-tex-accent-spell*
+
+Vim's spell tokeniser splits a name like `K\"ahler` into the fragments
+`K` and `ahler`, then flags `ahler` as a misspelling. With vimtex's
+conceal-accents on, vim instead silently skips letters in the shadow
+of the concealed accent, so `K\"ohler` (typo for `\"a`) is not caught.
+
+The accent spell-check feature works around both problems by attaching
+`vim.diagnostic` entries spanning the WHOLE LaTeX-encoded token. For
+each accented token it finds, it decodes to Unicode (`K\"ahler` →
+`Kähler`), checks the Unicode form against the live spellfile, and
+emits an INFO-level diagnostic when the Unicode form isn't a known
+word. The diagnostic source is "noethervim-tex.accent-spell"; it
+shows up in :Trouble, signcolumn, and any other diagnostic UI.
+
+Math regions and comments are excluded via the latex treesitter
+parser. If the parser is missing the feature degrades to no-op.
+
+8.4 Commands                              *noethervim-tex-accent-commands*
+
+`:NoetherTexAccentSpell {enable|disable|toggle}`
+                Per-buffer on/off switch. With no argument, toggles.
+
+`:NoetherTexAccentAdd [word]`
+                Decode the word under the cursor (or `[word]` if given)
+                and `:spellgood` the Unicode form, so future occurrences
+                of any LaTeX form decoding to that Unicode are accepted.
+
+`:NoetherTexAccentMarkWrong [word]`
+                Like Add, but `:spellwrong`.
+
+`:NoetherTexAccentSuggest`
+                Open `vim.ui.select` over `spellsuggest()` results for
+                the decoded form. The chosen suggestion replaces the
+                LaTeX-encoded token in the buffer with its Unicode
+                form. (Re-encoding back to LaTeX is left to you --
+                authoring style is personal.)
+
+8.5 <Plug> mappings                          *noethervim-tex-accent-plugs*
+
+The plugin ships <Plug> mappings; binding default keys is your call.
+
+  <Plug>(noethervim-tex-accent-add)
+  <Plug>(noethervim-tex-accent-mark-wrong)
+  <Plug>(noethervim-tex-accent-suggest)
+
+Suggested bindings (parallel to vim's built-in zg/zw/z=):
+>
+    vim.keymap.set("n", "zG", "<Plug>(noethervim-tex-accent-add)",
+                   { desc = "spell: add accented word" })
+    vim.keymap.set("n", "zW", "<Plug>(noethervim-tex-accent-mark-wrong)",
+                   { desc = "spell: mark accented word wrong" })
+    vim.keymap.set("n", "z=", "<Plug>(noethervim-tex-accent-suggest)",
+                   { desc = "spell: suggest accented form" })
+<
+
+8.6 Configuration                          *noethervim-tex-accent-config*
+
+>
+    require("noethervim-tex").setup({
+      accent_spell = {
+        enabled        = true,                            -- default
+        severity       = vim.diagnostic.severity.INFO,    -- HINT|INFO|WARN
+        debounce_ms    = 250,                             -- default
+        decoder_extras = {                                -- map (accent
+          ['"y'] = 'ÿ',                                  --  + letter)
+        },                                                --  -> unicode
+      },
+    })
+<
+Set `enabled = false` to leave the feature dormant. Per-buffer
+overrides come from `:NoetherTexAccentSpell disable` in that buffer.
 
 ==============================================================================
 9. SNIPPETS                                      *noethervim-tex-snippets*

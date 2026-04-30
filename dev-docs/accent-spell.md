@@ -82,7 +82,7 @@ plugin/noethervim_tex.lua    (NEW)
 spell/
 ├── en.utf-8.add        (existing math vocab, untouched apart from
 │                        removing the three fragment hacks in phase 5)
-└── accent_names.utf-8.add  (NEW: shipped Unicode dict for proper nouns)
+└── accents.utf-8.add  (NEW: shipped Unicode dict for proper nouns)
 ```
 
 The new `plugin/noethervim_tex.lua` is required by the writing-neovim-plugins
@@ -226,7 +226,7 @@ default.
 ---@field severity integer                             -- vim.diagnostic.severity.*  (default INFO)
 ---@field debounce_ms integer                          -- default 250
 ---@field decoder_extras table<string, string>         -- {accent..letter -> unicode}
----@field auto_install_word_dict boolean               -- default true; mkspells the shipped accent_names list once
+---@field auto_install_word_dict boolean               -- default true; mkspells the shipped accents list once
 
 ---@param opts? noethervim-tex.AccentSpellConfig
 function require("noethervim-tex.accent_spell").setup(opts) end
@@ -267,7 +267,7 @@ require("noethervim-tex").setup({
 
 1. **User spellfile** (`stdpath("config")/spell/en.utf-8.add` etc.) —
    user's own additions, written by `:NoetherTexAccentAdd`. Authoritative.
-2. **Shipped accent dictionary** (`spell/accent_names.utf-8.add`, NEW
+2. **Shipped accent dictionary** (`spell/accents.utf-8.add`, NEW
    file in this plugin) — common Unicode proper nouns: Kähler, Hölder,
    Schrödinger, Möbius, Gödel, Erdős, Poincaré, Bézier, Bézout,
    Fréchet, naïve, étalé, résumé, Šostakovich, Łukasiewicz, …. Built
@@ -276,7 +276,7 @@ require("noethervim-tex").setup({
 3. **No fallback** — anything decoded but not in 1 or 2 → diagnostic.
 
 The two `.add` files stay separate: `en.utf-8.add` is math *vocabulary*
-(words like "abelian", "adjoint"), `accent_names.utf-8.add` is *names
+(words like "abelian", "adjoint"), `accents.utf-8.add` is *names
 that happen to need accents*. Different responsibilities, different
 maintainers in the long run.
 
@@ -315,7 +315,7 @@ Phase 5 deliverable.
 
 1. Remove from `spell/en.utf-8.add`: `\'etal\'e` (line 2), `ahler`
    (line 25), `Erd` (line 301).
-2. Add to the new `spell/accent_names.utf-8.add`: Unicode forms for
+2. Add to the new `spell/accents.utf-8.add`: Unicode forms for
    each removed fragment (`étalé`, `Kähler` — already covered, `Erdős`
    — already covered).
 3. Bump NoetherVim's latex bundle to invalidate stale `.spl` files on

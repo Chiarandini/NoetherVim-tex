@@ -49,6 +49,12 @@ require("noethervim-tex").setup({
   preamble_folder     = "~/my/preambles/",      -- default: stdpath("config")/preamble/
   extra_snippet_paths = { "~/shared-snippets/" },-- additional LuaSnip load paths
   textobjects         = true,                    -- treesitter navigation (default: true)
+  accent_spell        = {                        -- LaTeX-accent spell diagnostics
+    enabled        = true,
+    severity       = vim.diagnostic.severity.INFO,
+    debounce_ms    = 250,
+    decoder_extras = {},
+  },
 })
 ```
 
@@ -66,6 +72,10 @@ Or via lazy.nvim `opts`:
 | `preamble_folder` | string | `stdpath("config")/preamble/` | Directory containing `.tex` preamble files |
 | `extra_snippet_paths` | table | `{}` | Additional directories for LuaSnip to load |
 | `textobjects` | boolean | `true` | Enable treesitter textobject keymaps |
+| `accent_spell.enabled` | boolean | `true` | Diagnostics for LaTeX-accented misspellings |
+| `accent_spell.severity` | integer | `INFO` | `vim.diagnostic.severity.{HINT,INFO,WARN,ERROR}` |
+| `accent_spell.debounce_ms` | integer | `250` | Refresh debounce window |
+| `accent_spell.decoder_extras` | table | `{}` | `{ [accent..letter] = "unicode" }` overrides |
 
 ---
 
@@ -98,7 +108,50 @@ Custom highlight queries for:
 
 ### Spell dictionary
 
-Ships `spell/en.utf-8.add` with 900+ mathematical and academic terms (homomorphism, Noetherian, cohomology, etc.) so they are not flagged by spell check.
+Two spell additions ship with the plugin:
+
+- `spell/en.utf-8.add`: 900+ mathematical and academic terms (homomorphism, Noetherian, cohomology, …).
+- `spell/accents.utf-8.add`: Unicode forms of common LaTeX-accented proper nouns — Kähler, Hölder, Erdős, Poincaré, Schrödinger, Möbius, Bézier, Bézout, Fréchet, Brézis, naïve, café, résumé, étalé, plus a handful of broader entries.
+
+Both are compiled to `.spl` automatically on plugin load and appended to your spellfile list.
+
+### LaTeX accent spell-check
+
+Vim's spell tokeniser splits `K\"ahler` into `K` and `ahler` and flags the fragment. With vimtex's conceal-accents on, vim instead silently skips the trailing letters of `K\"ohler` (a typo for `\"a`).
+
+This plugin attaches `vim.diagnostic` entries spanning the **whole** LaTeX-encoded token. Each accented token is decoded to Unicode (`K\"ahler` → `Kähler`); if the decoded form isn't in the spellfile you get an INFO diagnostic over the whole token. Math regions and comments are excluded via the latex treesitter parser.
+
+Commands:
+
+| Command | Action |
+|---------|--------|
+| `:NoetherTexAccentSpell {enable\|disable\|toggle}` | Per-buffer on/off |
+| `:NoetherTexAccentAdd [word]` | `:spellgood` the decoded form of cword (or arg) |
+| `:NoetherTexAccentMarkWrong [word]` | `:spellwrong` the decoded form |
+| `:NoetherTexAccentSuggest` | `vim.ui.select` over `spellsuggest()` results |
+
+`<Plug>` mappings (no default keys; bind whatever you like):
+
+```lua
+vim.keymap.set("n", "zG", "<Plug>(noethervim-tex-accent-add)",         { desc = "spell: add accented word" })
+vim.keymap.set("n", "zW", "<Plug>(noethervim-tex-accent-mark-wrong)", { desc = "spell: mark accented word wrong" })
+vim.keymap.set("n", "z=", "<Plug>(noethervim-tex-accent-suggest)",    { desc = "spell: suggest accented form" })
+```
+
+Configuration:
+
+```lua
+require("noethervim-tex").setup({
+  accent_spell = {
+    enabled        = true,                            -- default
+    severity       = vim.diagnostic.severity.INFO,    -- HINT|INFO|WARN
+    debounce_ms    = 250,                             -- default
+    decoder_extras = { ['"y'] = "ÿ" },                -- map (accent..letter)
+  },
+})
+```
+
+See `:h noethervim-tex-accent-spell` for the full reference.
 
 ---
 
@@ -339,10 +392,19 @@ local get_visual = helper.get_visual_node
 
 ```
 noethervim-tex/
+├── plugin/
+│   └── noethervim_tex.lua        <- auto-init: <Plug>, commands, autocmds, mkspell
 ├── lua/noethervim-tex/
 │   ├── init.lua                  <- setup, config, public API
+│   ├── health.lua                <- :checkhealth noethervim-tex
 │   ├── luasnip_helper.lua        <- shared snippet utilities
 │   ├── treesitter_textobjects.lua<- navigation keymaps
+│   ├── accent_spell/
+│   │   ├── init.lua              <- module entrypoint, public API
+│   │   ├── decoder.lua           <- (accent, letter) -> Unicode
+│   │   ├── scanner.lua           <- find accent tokens in buffers
+│   │   ├── diagnostics.lua       <- emit/clear vim.diagnostic
+│   │   └── commands.lua          <- :NoetherTexAccent* commands
 │   └── sources/
 │       └── preambles.lua         <- blink.cmp preamble source
 ├── LuaSnip/tex/
@@ -356,7 +418,15 @@ noethervim-tex/
 │   └── highlights.scm            <- custom syntax highlights
 ├── spell/
 │   ├── en.utf-8.add              <- mathematical spell dictionary
-│   └── en.utf-8.add.spl          <- compiled dictionary
+│   └── accents.utf-8.add    <- Unicode forms of accented proper nouns
+├── tests/
+│   ├── decoder_spec.lua
+│   ├── scanner_spec.lua
+│   ├── diagnostics_spec.lua
+│   ├── minimal_init.lua
+│   └── run.sh                    <- bash tests/run.sh -- plenary busted
+├── dev-docs/
+│   └── accent-spell.md           <- design spec
 └── doc/
     └── noethervim-tex.txt        <- :help noethervim-tex
 ```

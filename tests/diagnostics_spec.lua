@@ -3,7 +3,7 @@
 -- Exercises the diagnostics module + the public API that wraps it.
 -- We use vim's stock en_us spellfile (always available in headless
 -- nvim) as the dictionary, so behaviour here matches a fresh install
--- with no shipped accent_names dict yet.
+-- with no shipped accents dict yet.
 
 local accent = require("noethervim-tex.accent_spell")
 local diagnostics = require("noethervim-tex.accent_spell.diagnostics")
