@@ -146,8 +146,10 @@ function M.maybe_refresh(bufnr)
   end))
 end
 
--- Find an accent token covering the cursor position, or nil.
-local function token_under_cursor()
+-- Find an accent token covering the cursor position, or nil.  Public so
+-- integrations (e.g. NoetherVim's z= binding) can route plain words to
+-- their own speller and only take over on accent tokens.
+function M.token_under_cursor()
   local scanner = require("noethervim-tex.accent_spell.scanner")
   local row, col = unpack(vim.api.nvim_win_get_cursor(0))
   local line = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1]
@@ -157,6 +159,7 @@ local function token_under_cursor()
   end
   return nil
 end
+local token_under_cursor = M.token_under_cursor
 
 local function resolve_target(word)
   if word and word ~= "" then
