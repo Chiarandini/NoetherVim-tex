@@ -229,7 +229,33 @@ end
 function M.suggest()
   local tok = token_under_cursor()
   if not tok then
-    vim.cmd("silent! normal! z=")
+    -- Plain (non-accented) word fallback.  Route through vim.ui.select so
+    -- a configured replacement (snacks, telescope, etc.) handles the
+    -- prompt instead of vim's built-in numbered list -- the latter only
+    -- renders cleanly when invoked interactively from the keyboard.
+    --
+    -- Strategy: gather suggestions ourselves, present via vim.ui.select,
+    -- then dispatch the selection through [count]z=.  vim does its own
+    -- word-boundary lookup and replacement that way, so we don't have to
+    -- duplicate iskeyword logic here.  spellsuggest with max=25 matches
+    -- vim's default z= window, so menu index N lines up with [N]z='s pick.
+    local bad = vim.fn.spellbadword()
+    local word = bad[1]
+    if word == "" then
+      notify("no spelling error at cursor")
+      return
+    end
+    local suggestions = vim.fn.spellsuggest(word, 25, 1)
+    if not suggestions or #suggestions == 0 then
+      notify(("no suggestions for %q"):format(word))
+      return
+    end
+    vim.ui.select(suggestions, {
+      prompt = ("Suggestions for %q:"):format(word),
+    }, function(_choice, idx)
+      if not idx then return end
+      vim.cmd("normal! " .. idx .. "z=")
+    end)
     return
   end
   local suggestions = vim.fn.spellsuggest(tok.decoded, 8, 1)
