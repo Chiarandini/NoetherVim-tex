@@ -4,6 +4,8 @@ A LaTeX companion plugin for Neovim, built for mathematical writing. Provides co
 
 Standalone by design, but integrates seamlessly with [NoetherVim](https://github.com/Chiarandini/NoetherVim) as part of its `latex` bundle.
 
+![Preamble completion, treesitter structure jumps, accent-aware spell check, and math snippets](assets/tour.gif)
+
 ---
 
 ## Philosophy
@@ -167,6 +169,8 @@ See `:h noethervim-tex-accent-spell` for the full reference.
 All snippets are LuaSnip snippets loaded from the plugin's `LuaSnip/tex/` directory. They are organized into five files by category. Many support visual selection — select text, press the snippet trigger, and the selection wraps into the expanded snippet.
 
 Snippets are either **manual** (expand with the LuaSnip expand key) or **auto** (expand immediately when the trigger is typed in the correct context).
+
+![Auto-expanding snippets in and out of math zones](assets/snippets.gif)
 
 ### Environments
 
