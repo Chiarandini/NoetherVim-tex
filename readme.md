@@ -166,11 +166,26 @@ See `:h noethervim-tex-accent-spell` for the full reference.
 
 ## Snippets
 
-All snippets are LuaSnip snippets loaded from the plugin's `LuaSnip/tex/` directory. They are organized into five files by category. Many support visual selection — select text, press the snippet trigger, and the selection wraps into the expanded snippet.
+All snippets are LuaSnip snippets loaded from the plugin's `LuaSnip/tex/` directory. They are organized into six files by category. Many support visual selection — select text, press the snippet trigger, and the selection wraps into the expanded snippet.
 
 Snippets are either **manual** (expand with the LuaSnip expand key) or **auto** (expand immediately when the trigger is typed in the correct context).
 
 ![Auto-expanding snippets in and out of math zones](assets/snippets.gif)
+
+### Preamble
+
+Active only before `\begin{document}`, so the triggers disappear once the body
+starts. All manual, and self-contained — no file IO, nothing to configure. To
+pull in your own modular preamble fragments instead, type `@` at the start of a
+line (see [Preamble completion](#preamble-completion-blinkcmp)).
+
+| Trigger | Expands to |
+|---|---|
+| `amsart` | `amsart` skeleton with hyperref, cleveref, and the `thmset` declarations |
+| `standalone` | `standalone` class set up for a single TikZ figure |
+| `mathpkgs` | amsmath, amssymb, amsthm, mathtools, mathrsfs, hyperref, cleveref |
+| `thmset` | amsthm declarations, all sharing `theorem`'s counter |
+| `geom` | `geometry` margins |
 
 ### Environments
 

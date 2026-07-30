@@ -26,6 +26,7 @@ CONTENTS                                            *noethervim-tex-contents*
        9.3 Text formatting ................. |noethervim-tex-fonts|
        9.4 Document structure .............. |noethervim-tex-commands|
        9.5 Text abbreviations .............. |noethervim-tex-abbreviations|
+       9.6 Preamble ........................ |noethervim-tex-preamble-snippets|
    10. Custom snippets ..................... |noethervim-tex-custom-snippets|
        10.1 Helper API ..................... |noethervim-tex-helpers|
    11. Structure ........................... |noethervim-tex-structure|
@@ -37,7 +38,7 @@ noethervim-tex is a LaTeX companion plugin for Neovim, built for
 mathematical writing. It provides:
 
 - Context-aware LuaSnip snippet collection (math, environments, fonts,
-  text abbreviations, document structure)
+  text abbreviations, document structure, preamble templates)
 - Treesitter textobject navigation for theorem-proof workflows
 - blink.cmp preamble completion source
 - Custom treesitter highlight queries
@@ -435,6 +436,22 @@ Auto-expanding abbreviations for common mathematical phrases.
     `awsts`             as we sought to show
     `ctp`               completing the proof
 
+------------------------------------------------------------------------------
+9.6 PREAMBLE                              *noethervim-tex-preamble-snippets*
+
+Active only before `\begin{document}`, so the triggers disappear once the
+body starts. All manual, and self-contained: no file IO and nothing to
+configure. To pull in your own modular preamble fragments instead, type `@`
+at the start of a line -- see |noethervim-tex-preamble-source|.
+
+    `amsart`        amsart skeleton, with hyperref, cleveref and the
+                    `thmset` declarations below
+    `standalone`    standalone class set up for a single TikZ figure
+    `mathpkgs`      amsmath, amssymb, amsthm, mathtools, mathrsfs,
+                    hyperref, cleveref
+    `thmset`        amsthm declarations, all sharing `theorem`'s counter
+    `geom`          geometry margins
+
 ==============================================================================
 10. CUSTOM SNIPPETS                          *noethervim-tex-custom-snippets*
 
@@ -518,6 +535,7 @@ Other helpers: ~
     |   |-- environments.lua            environment snippets
     |   |-- fonts.lua                   text formatting snippets
     |   |-- commands.lua                document structure snippets
+    |   |-- preamble.lua                preamble templates
     |   `-- text-Acronym.lua            text abbreviations
     |-- queries/latex/
     |   |-- textobjects.scm             treesitter queries for navigation
