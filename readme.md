@@ -1,6 +1,6 @@
 # noethervim-tex
 
-A LaTeX companion plugin for Neovim, built for mathematical writing. Provides context-aware LuaSnip snippets, treesitter textobject navigation, a preamble completion source, custom syntax highlights, and a spell dictionary of 900+ mathematical terms.
+A LaTeX companion plugin for Neovim, built for mathematical writing. Provides context-aware LuaSnip snippets, treesitter textobject navigation, completion sources for preamble fragments and figure names, custom syntax highlights, and a spell dictionary of 900+ mathematical terms.
 
 Standalone by design, but integrates seamlessly with [NoetherVim](https://github.com/Chiarandini/NoetherVim) as part of its `latex` bundle.
 
@@ -25,7 +25,7 @@ Standalone by design, but integrates seamlessly with [NoetherVim](https://github
 - Treesitter `latex` parser — for textobject navigation and syntax highlights
 
 Optional:
-- [blink.cmp](https://github.com/Saghen/blink.cmp) — for the preamble completion source
+- [blink.cmp](https://github.com/Saghen/blink.cmp) — for the preamble and figure completion sources
 
 ---
 
@@ -51,6 +51,7 @@ require("noethervim-tex").setup({
   preamble_folder     = "~/my/preambles/",      -- default: stdpath("config")/preamble/
   extra_snippet_paths = { "~/shared-snippets/" },-- additional LuaSnip load paths
   textobjects         = true,                    -- treesitter navigation (default: true)
+  figure_folders      = { "figures", "images" }, -- searched for figure filenames
   accent_spell        = {                        -- LaTeX-accent spell diagnostics
     enabled        = true,
     severity       = vim.diagnostic.severity.INFO,
@@ -98,6 +99,12 @@ Jump between LaTeX structures in normal mode. All mappings are buffer-local to `
 | `]c` / `[c` | Next / prev chapter |
 
 Jumps are added to the jumplist, so `<C-o>` returns to the previous position.
+
+### Figure completion (blink.cmp)
+
+Inside `\incfig{}`, `\includegraphics{}`, or the second argument of `\import{}{}`, completion offers the figure filenames it finds, extensions stripped and duplicates merged so a figure saved as both `.svg` and `.pdf` appears once. It completes names only: `FIG` and `<N>SFIG` already template the figure block.
+
+`figure_folders` is searched in order and the first one that exists wins, resolved against the **document** rather than the working directory, so it keeps working when you open a paper from elsewhere. A string, an absolute path, or a function returning either is also accepted.
 
 ### Preamble completion (blink.cmp)
 

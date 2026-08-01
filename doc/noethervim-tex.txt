@@ -11,7 +11,9 @@ CONTENTS                                            *noethervim-tex-contents*
     3. Installation ........................ |noethervim-tex-install|
     4. Configuration ....................... |noethervim-tex-config|
     5. Textobject navigation ............... |noethervim-tex-textobjects|
-    6. Preamble completion ................. |noethervim-tex-preamble-source|
+    6. Completion sources .................. |noethervim-tex-sources|
+       6.1 Preamble ........................ |noethervim-tex-preamble-source|
+       6.2 Figures ......................... |noethervim-tex-figure-source|
     7. Treesitter highlights ............... |noethervim-tex-highlights|
     8. Spell ............................... |noethervim-tex-spell|
        8.1 Math vocabulary ................. |noethervim-tex-spell-math|
@@ -40,7 +42,7 @@ mathematical writing. It provides:
 - Context-aware LuaSnip snippet collection (math, environments, fonts,
   text abbreviations, document structure, preamble templates)
 - Treesitter textobject navigation for theorem-proof workflows
-- blink.cmp preamble completion source
+- blink.cmp completion sources for preamble fragments and figure names
 - Custom treesitter highlight queries
 - Spell dictionary of 900+ mathematical and academic terms
 
@@ -57,7 +59,7 @@ Required: ~
 - Treesitter `latex` parser — for textobjects and highlights
 
 Optional: ~
-- blink.cmp — for the preamble completion source
+- blink.cmp — for the preamble and figure completion sources
 
 ==============================================================================
 3. INSTALLATION                                    *noethervim-tex-install*
@@ -86,6 +88,10 @@ Options: ~
     `preamble_folder`     (string, default: stdpath("config")/preamble/)
         Directory containing `.tex` preamble files used by the preamble
         completion source.
+
+    `figure_folders`      (table|string|function, default: {"figures", "images"})
+        Folders searched by the figure completion source, in order,
+        resolved against the current document.
 
     `extra_snippet_paths`  (table, default: {})
         Additional directories for LuaSnip to lazy-load snippets from.
@@ -119,7 +125,10 @@ Uses native `vim.treesitter` — no nvim-treesitter-textobjects plugin
 required. Disable with `textobjects = false` in setup.
 
 ==============================================================================
-6. PREAMBLE COMPLETION                      *noethervim-tex-preamble-source*
+6. COMPLETION SOURCES                              *noethervim-tex-sources*
+
+------------------------------------------------------------------------------
+6.1 PREAMBLE                                *noethervim-tex-preamble-source*
 
 A blink.cmp completion source. Type `@` at the start of a line outside
 `\begin{document}` to trigger completion. Lists the `.tex` fragments in
@@ -130,6 +139,25 @@ The folder is rescanned on every completion, so a fragment added
 mid-session appears without restarting Neovim.
 
 Requires blink.cmp to be installed and the source to be registered.
+
+------------------------------------------------------------------------------
+6.2 FIGURES                                   *noethervim-tex-figure-source*
+
+Inside `\incfig{}`, `\includegraphics{}`, or the second argument of
+`\import{}{}`, completes the figure filenames found on disk. Extensions are
+stripped and duplicates merged, so a figure saved as both `.svg` and `.pdf`
+is offered once.
+
+Names only: |noethervim-tex-environments| already templates the figure block
+via `FIG` and `<N>SFIG`, and choosing a LaTeX idiom here would impose one.
+
+`figure_folders` is searched in order, first existing wins, resolved against
+the document rather than the working directory: >lua
+    require("noethervim-tex").setup({
+      figure_folders = { "figures", "images" },
+    })
+<
+A string, an absolute path, or a function returning either also works.
 
 ==============================================================================
 7. TREESITTER HIGHLIGHTS                       *noethervim-tex-highlights*
@@ -532,7 +560,8 @@ Other helpers: ~
     |   |-- luasnip_helper.lua          shared snippet utilities
     |   |-- treesitter_textobjects.lua  navigation keymaps
     |   `-- sources/
-    |       `-- preambles.lua           blink.cmp preamble source
+    |       |-- preambles.lua           blink.cmp preamble source
+    |       `-- figures.lua             blink.cmp figure-name source
     |-- LuaSnip/tex/
     |   |-- math.lua                    math mode snippets
     |   |-- environments.lua            environment snippets

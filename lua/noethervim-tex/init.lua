@@ -47,6 +47,9 @@ function M.setup(opts)
     preamble_folder     = vim.fn.expand(opts.preamble_folder or (vim.fn.stdpath("config") .. "/preamble/")),
     extra_snippet_paths = opts.extra_snippet_paths or {},
     textobjects         = opts.textobjects ~= false,  -- default true
+    -- Where the figures source looks, relative to the document. First
+    -- one that exists wins; a string, absolute path, or function is fine.
+    figure_folders      = opts.figure_folders or { "figures", "images" },
   }
 
   -- Register LuaSnip snippets from this plugin's LuaSnip/ directory.
