@@ -122,9 +122,12 @@ required. Disable with `textobjects = false` in setup.
 6. PREAMBLE COMPLETION                      *noethervim-tex-preamble-source*
 
 A blink.cmp completion source. Type `@` at the start of a line outside
-`\begin{document}` to trigger completion. Lists `.tex` files from the
-configured `preamble_folder` and inserts the filename without the `.tex`
-extension.
+`\begin{document}` to trigger completion. Lists the `.tex` fragments in
+the configured `preamble_folder`, previews the chosen one in the
+documentation window, and inserts its contents in place of the `@`.
+
+The folder is rescanned on every completion, so a fragment added
+mid-session appears without restarting Neovim.
 
 Requires blink.cmp to be installed and the source to be registered.
 
@@ -542,7 +545,8 @@ Other helpers: ~
     |   `-- highlights.scm              custom syntax highlights
     |-- spell/
     |   |-- en.utf-8.add                mathematical spell dictionary
-    |   `-- en.utf-8.add.spl            compiled dictionary
+    |   |-- en.utf-8.add.spl            compiled dictionary
+    |   `-- accents.utf-8.add           LaTeX-accented proper nouns
     `-- doc/
         `-- noethervim-tex.txt          this file
 <

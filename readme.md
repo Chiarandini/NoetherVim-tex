@@ -101,7 +101,9 @@ Jumps are added to the jumplist, so `<C-o>` returns to the previous position.
 
 ### Preamble completion (blink.cmp)
 
-Type `@` at the start of a line outside `\begin{document}` to trigger completion of preamble file names from your configured `preamble_folder`. Selecting an item inserts the filename (without `.tex`).
+Type `@` at the start of a line outside `\begin{document}` to trigger completion of the `.tex` fragments in your configured `preamble_folder`. The documentation window previews the fragment, and accepting an item inserts its contents in place of the `@`.
+
+The folder is rescanned on every completion, so a fragment added mid-session shows up without restarting Neovim.
 
 ### Treesitter highlights
 
@@ -175,7 +177,7 @@ Snippets are either **manual** (expand with the LuaSnip expand key) or **auto** 
 ### Preamble
 
 Active only before `\begin{document}`, so the triggers disappear once the body
-starts. All manual, and self-contained — no file IO, nothing to configure. To
+starts. All manual, and self-contained: no file IO, nothing to configure. To
 pull in your own modular preamble fragments instead, type `@` at the start of a
 line (see [Preamble completion](#preamble-completion-blinkcmp)).
 
