@@ -87,7 +87,7 @@ Or via lazy.nvim `opts`:
 
 ### Treesitter textobject navigation
 
-Jump between LaTeX structures in normal mode. All mappings are buffer-local to `tex`/`latex` filetypes.
+Jump between LaTeX structures. All mappings are buffer-local to `tex`/`latex` filetypes, and work in normal, visual and operator-pending mode: `d]g` deletes from the cursor to the start of the next theorem, `v]g` extends a selection there.
 
 | Keymap | Description |
 |---|---|

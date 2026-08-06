@@ -2,7 +2,8 @@
 --- Uses vim.treesitter directly — no dependency on nvim-treesitter-textobjects
 --- or on nvim-treesitter highlight being active for tex buffers.
 ---
---- Keybindings (tex/latex buffers only):
+--- Keybindings (tex/latex buffers only), in normal, visual and
+--- operator-pending mode:
 ---   ]g / [g  — next/prev theorem env (defn, thm, prop, lem, cor)
 ---   ]p / [p  — next/prev \begin{Proof}
 ---   ]P / [P  — next/prev \end{Proof}
@@ -66,8 +67,12 @@ local function navigate(capture_name, forward)
 end
 
 local function attach_keymaps(bufnr)
+  -- Visual and operator-pending as well as normal: every other `[`/`]` motion
+  -- in Vim composes with operators and extends a selection, so `d]g` and
+  -- `v]g` are what a reader expects these to do. The motion is exclusive and
+  -- charwise, acting from the cursor to the start of the target node.
   local function map(lhs, capture, forward, desc)
-    vim.keymap.set("n", lhs, function() navigate(capture, forward) end,
+    vim.keymap.set({ "n", "x", "o" }, lhs, function() navigate(capture, forward) end,
       { buffer = bufnr, silent = true, desc = desc })
   end
 

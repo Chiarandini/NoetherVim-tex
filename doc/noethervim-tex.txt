@@ -109,9 +109,9 @@ Override via lazy.nvim in user plugins: >lua
 ==============================================================================
 5. TEXTOBJECT NAVIGATION                       *noethervim-tex-textobjects*
 
-Jump between LaTeX structures in normal mode. All mappings are
-buffer-local to `tex`/`latex` filetypes. Jumps are added to the
-jumplist (`<C-o>` returns to previous position).
+Jump between LaTeX structures. All mappings are buffer-local to
+`tex`/`latex` filetypes. Jumps are added to the jumplist (`<C-o>`
+returns to previous position).
 
     `]g` / `[g`     Next / prev theorem environment
                    (defn, thm, prop, lem, cor)
@@ -120,6 +120,15 @@ jumplist (`<C-o>` returns to previous position).
     `]x` / `[x`     Next / prev \begin{example}
     `]X` / `[X`     Next / prev \end{example}
     `]c` / `[c`     Next / prev chapter
+
+They are motions, not textobjects, and work in normal, visual and
+operator-pending mode. `d]g` deletes from the cursor to the start of the
+next theorem, `v]g` extends a selection there. The motion is exclusive
+and charwise.
+
+To operate on a whole environment rather than a span between two, use
+VimTeX's textobjects: `ie` / `ae` for environments, `i$` / `a$` for
+inline math.
 
 Uses native `vim.treesitter` — no nvim-treesitter-textobjects plugin
 required. Disable with `textobjects = false` in setup.
