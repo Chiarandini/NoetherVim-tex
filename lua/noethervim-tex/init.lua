@@ -50,6 +50,9 @@ function M.setup(opts)
     -- Where the figures source looks, relative to the document. First
     -- one that exists wins; a string, absolute path, or function is fine.
     figure_folders      = opts.figure_folders or { "figures", "images" },
+    -- `follow = false` skips the autocmd and the command entirely; a table
+    -- is passed through to noethervim-tex.follow (event, debounce).
+    follow              = opts.follow,
   }
 
   -- Register LuaSnip snippets from this plugin's LuaSnip/ directory.
@@ -74,6 +77,13 @@ function M.setup(opts)
   -- registered unconditionally in plugin/noethervim_tex.lua at plugin
   -- load, so they work even if the user never calls this setup().
   require("noethervim-tex.accent_spell").setup(opts.accent_spell)
+
+  -- PDF-follows-cursor. Registered always, enabled per buffer on request:
+  -- the autocmd returns on its first line unless the buffer asked for it.
+  if M.config.follow ~= false then
+    require("noethervim-tex.follow").setup(
+      type(M.config.follow) == "table" and M.config.follow or {})
+  end
 end
 
 --- Helper functions for LuaSnip tex snippets.
